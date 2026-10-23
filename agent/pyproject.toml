@@ -29,6 +29,11 @@ build-backend = "hatchling.build"
 [tool.hatch.build.targets.wheel]
 packages = ["src/claimsense_agent"]
 
+# The test client's page is data, not code, and a wheel that drops it serves
+# a 500 on "/".
+[tool.hatch.build.targets.wheel.force-include]
+"src/claimsense_agent/testclient/index.html" = "claimsense_agent/testclient/index.html"
+
 [tool.pytest.ini_options]
 pythonpath = ["src"]
 testpaths = ["tests"]

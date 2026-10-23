@@ -136,6 +136,19 @@ note "build-and-push declares needs: [test, eval, integration], so a red"
 note "gate means the push job is never scheduled. Not a conditional — a"
 note "dependency."
 
+step "9. Driving it without the portal at all"
+note "The agent serves its own test client. Separate port, separate"
+note "process, no Next.js and no portal database involved — if this"
+note "works with Claims Desk down, the pipeline is independent of it."
+echo
+printf "    ${BOLD}make serve${RESET}  →  http://127.0.0.1:8080\n"
+echo
+note "Pick a claim, pick the seat to act as, tick 'force the tripwire',"
+note "and read the whole run: the narrative, the verdict, what was"
+note "retrieved versus what was cited, which steps were arithmetic and"
+note "which were judgment, and the spans."
+pause
+
 step "Week 3 — what was delivered"
 printf "  ${BOLD}Agents SDK pipeline${RESET}     triage ➜ evidence ➜ coverage ➜ adjudicate\n"
 printf "  ${BOLD}search_policy_clauses${RESET}   the manual form search, as a tool\n"
@@ -144,6 +157,7 @@ printf "  ${BOLD}Four guardrails${RESET}         quarantine · citation · overr
 printf "  ${BOLD}Retrieval with citations${RESET} every clause id was actually retrieved\n"
 printf "  ${BOLD}20-case gate${RESET}            100%%, all four outcomes, 5/5 adversarial\n"
 printf "  ${BOLD}CI blocks the push${RESET}      proven above, by exit code\n"
+printf "  ${BOLD}Agent test client${RESET}       make serve — the agent, standalone\n"
 echo
 note "Deliverables: docs/week3/"
 note "Next (Week 4): wire this into Northwind's Claims Desk."

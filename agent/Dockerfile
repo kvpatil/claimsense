@@ -29,6 +29,9 @@ COPY tests/ ./tests/
 RUN useradd --create-home --uid 10001 claimsense && chown -R claimsense /app
 USER claimsense
 
+# The test client, when run with `serve`.
+EXPOSE 8080
+
 # Mock brain by default: the container must be runnable with no AWS account,
 # no key and no network.
 ENTRYPOINT ["python3", "-m", "claimsense_agent"]

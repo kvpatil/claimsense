@@ -46,11 +46,24 @@ def main(argv: list[str] | None = None) -> int:
 
     sub.add_parser("show-sdk", help="print the real Agents SDK wiring")
 
+    srv = sub.add_parser("serve",
+                         help="the agent test client on :8080 — drive the "
+                              "pipeline directly, with no portal involved")
+    srv.add_argument("--port", type=int, default=8080)
+    _add_common(srv)
+
     ls = sub.add_parser("claims", help="list the claim queue")
     ls.add_argument("--limit", type=int, default=25)
     _add_common(ls)
 
     args = ap.parse_args(argv if argv is not None else sys.argv[1:])
+
+    if args.cmd == "serve":
+        from .testclient import serve
+        serve(port=args.port,
+              force_mock=args.mock or not args.live,
+              mock_data=not args.live)
+        return 0
 
     if args.cmd == "show-sdk":
         from .agents.sdk_runtime import SDK_REFERENCE

@@ -196,6 +196,7 @@ Or without containers:
 | `make tripwire` | the blocked case above |
 | `make verify` | the $0 gate — prerequisites, eval, unit tests |
 | `make eval` / `make golden` | the gates CI runs |
+| `make serve` | the agent test client on `:8080` — no portal involved |
 | `make show-sdk` | print the real Agents SDK wiring |
 
 ### Configuration

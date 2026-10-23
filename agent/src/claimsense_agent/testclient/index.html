@@ -1,0 +1,370 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ClaimSense Agent Runtime</title>
+<style>
+/* Inline, because this page has no build step and no dependencies — the same
+   reason the server is stdlib http.server. A harness for the thing that runs
+   on nothing should itself run on nothing.
+
+   Violet is the VENDOR's colour. This surface is entirely ours; the client's
+   portal is a separate application on a separate port. */
+:root{
+  --ink:#1a1820; --muted:#585461; --line:#d9d6e0; --paper:#fdfdfd;
+  --ground:#f7f6f9; --note:#eeedf1; --accent:#521fcd; --tint:#f3effc;
+  --up:#1b7f4e; --down:#b4332f; --warn:#9a6a1b; color-scheme:light;
+}
+@media (prefers-color-scheme:dark){:root{
+  --ink:#e7e6eb; --muted:#9d99a6; --line:#35323c; --paper:#1d1b21;
+  --ground:#131217; --note:#221f28; --accent:#9b7aeb; --tint:#201d28;
+  --up:#4fbf85; --down:#e8786f; --warn:#d2a248; color-scheme:dark;}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--ground);color:var(--ink);
+  font:15px/1.5 "Inter Tight",system-ui,-apple-system,"Segoe UI",sans-serif;
+  -webkit-font-smoothing:antialiased}
+/* Every figure aligns in its column and stops jittering as values update. */
+.num,code,pre,td,th{font-variant-numeric:tabular-nums lining-nums}
+code,pre{font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+.wrap{max-width:1240px;margin:0 auto;padding:28px 22px 60px}
+header{display:flex;justify-content:space-between;align-items:flex-start;
+  gap:20px;flex-wrap:wrap;margin-bottom:26px}
+.eyebrow{font-size:11px;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--accent);font-weight:600;margin:0 0 4px}
+h1{font-family:"Source Serif 4",Georgia,serif;font-size:27px;font-weight:650;
+  letter-spacing:-.015em;margin:0}
+.sub{color:var(--muted);font-size:13.5px;margin:5px 0 0;max-width:62ch}
+.status{display:flex;gap:7px;flex-wrap:wrap;align-items:center}
+.chip{display:inline-flex;align-items:center;gap:6px;padding:3px 10px;
+  border:1px solid var(--line);border-radius:999px;font-size:12.5px;
+  color:var(--muted);background:var(--paper);white-space:nowrap}
+.chip b{color:var(--ink);font-weight:600}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--muted)}
+.dot.ok{background:var(--up)} .dot.bad{background:var(--down)}
+.grid{display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:18px;
+  align-items:start}
+@media(max-width:940px){.grid{grid-template-columns:minmax(0,1fr)}}
+.card{background:var(--paper);border:1px solid var(--line);border-radius:12px}
+.card>h2{font-family:"Source Serif 4",Georgia,serif;font-size:15.5px;
+  font-weight:650;margin:0;padding:14px 18px 11px;border-bottom:1px solid var(--line)}
+.card>.body{padding:16px 18px}
+label{display:block;font-size:11px;letter-spacing:.07em;text-transform:uppercase;
+  color:var(--muted);margin-bottom:5px}
+input[type=text],select{width:100%;padding:8px 11px;border:1px solid var(--line);
+  border-radius:8px;background:var(--note);color:var(--ink);font:inherit;font-size:14px}
+input:focus,select:focus{outline:none;border-color:var(--accent)}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:13px}
+@media(max-width:560px){.row{grid-template-columns:1fr}}
+.toggles{display:flex;gap:16px;flex-wrap:wrap;margin:4px 0 15px}
+.toggle{display:flex;gap:7px;align-items:flex-start;font-size:13px;cursor:pointer;
+  color:var(--muted);max-width:30ch}
+.toggle input{margin:2px 0 0;accent-color:var(--accent)}
+.toggle b{display:block;color:var(--ink);font-weight:600;font-size:13.5px}
+button.run{width:100%;padding:11px;border:0;border-radius:9px;
+  background:var(--accent);color:#fff;font:inherit;font-weight:600;font-size:14.5px;
+  cursor:pointer}
+button.run:disabled{opacity:.45;cursor:not-allowed}
+.examples{display:flex;flex-direction:column;gap:2px}
+.ex{display:block;width:100%;text-align:left;padding:9px 10px;border:0;
+  border-radius:8px;background:transparent;color:inherit;font:inherit;cursor:pointer}
+.ex:hover{background:var(--tint)}
+.ex .id{font-weight:600;font-size:13.5px}
+.ex .lbl{color:var(--muted);font-size:12.5px}
+.ex .why{color:var(--muted);font-size:12px;opacity:.85;margin-top:1px}
+.out{margin-top:18px}
+.narr{font-size:15px;line-height:1.62;margin:0}
+.verdict{display:grid;grid-template-columns:repeat(auto-fit,minmax(135px,1fr));
+  gap:1px;background:var(--line);border:1px solid var(--line);border-radius:10px;
+  overflow:hidden;margin-top:15px}
+.v{background:var(--paper);padding:11px 13px}
+.v .k{font-size:10.5px;letter-spacing:.07em;text-transform:uppercase;
+  color:var(--muted);margin-bottom:3px}
+.v .val{font-size:17px;font-weight:650;line-height:1.2}
+.v .val.sm{font-size:13.5px;font-weight:600}
+.approve{color:var(--up)} .deny{color:var(--down)}
+.more_info{color:var(--warn)} .siu_referral{color:var(--accent)}
+.pill{display:inline-block;padding:2px 8px;border-radius:999px;font-size:11.5px;
+  border:1px solid currentColor;font-weight:600}
+details{margin-top:11px;border-top:1px solid var(--line);padding-top:11px}
+summary{cursor:pointer;font-size:13px;color:var(--muted);font-weight:600}
+summary:hover{color:var(--accent)}
+pre.json{background:var(--note);border-radius:8px;padding:12px;overflow-x:auto;
+  font-size:12px;line-height:1.5;margin:10px 0 0}
+table{width:100%;border-collapse:collapse;font-size:13px;margin-top:9px}
+td,th{text-align:left;padding:5px 8px 5px 0;border-bottom:1px solid var(--line)}
+th{font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);
+  font-weight:600}
+.blocked{border:1px solid var(--down);background:color-mix(in srgb,var(--down) 8%,transparent);
+  border-radius:9px;padding:12px 14px;margin-bottom:14px}
+.blocked b{color:var(--down)}
+.note{font-size:12.5px;color:var(--muted);margin:9px 0 0}
+.err{color:var(--down);font-size:13.5px}
+.kind-code{color:var(--accent)}
+.spinner{display:inline-block;width:12px;height:12px;border:2px solid currentColor;
+  border-right-color:transparent;border-radius:50%;animation:spin .7s linear infinite;
+  vertical-align:-1px;margin-right:6px}
+@keyframes spin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.spinner{animation:none}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <div>
+    <p class="eyebrow">OpenAI Agents SDK · four-stage pipeline</p>
+    <h1>ClaimSense Agent Runtime</h1>
+    <p class="sub">A test harness for the agent on its own. Northwind's Claims
+      Desk is not involved — if this works with the portal down, the pipeline
+      is genuinely independent of it.</p>
+  </div>
+  <div class="status" id="status">
+    <span class="chip"><span class="dot" id="hdot"></span><span id="htxt">checking…</span></span>
+  </div>
+</header>
+
+<div class="grid">
+  <main>
+    <section class="card">
+      <h2>Invoke the agent</h2>
+      <div class="body">
+        <div class="row">
+          <div>
+            <label for="claim">Claim</label>
+            <input type="text" id="claim" value="4414" inputmode="numeric">
+          </div>
+          <div>
+            <label for="seat">Acting as</label>
+            <select id="seat">
+              <option value="5">ClaimSense service seat — reads all, cannot confirm</option>
+              <option value="1">Dana Okafor — adjuster, licensed</option>
+              <option value="3">Priya Nakamura — supervisor, licensed</option>
+              <option value="4">Elena Castellanos — SIU, no licence</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="toggles">
+          <label class="toggle">
+            <input type="checkbox" id="livedata">
+            <span><b>Live client systems</b>read CMS/PAS/DMS over HTTP instead of
+              the bundled fixture</span>
+          </label>
+          <label class="toggle">
+            <input type="checkbox" id="livebrain">
+            <span><b>Live model</b>Agents SDK on Bedrock instead of the
+              deterministic mock</span>
+          </label>
+          <label class="toggle">
+            <input type="checkbox" id="tripwire">
+            <span><b>Force the tripwire</b>make Coverage state a money-moving
+              conclusion with no citation</span>
+          </label>
+        </div>
+
+        <button class="run" id="run">Run assessment</button>
+        <p class="note" id="hint">Mock brain and bundled fixture — no key, no
+          network, no spend.</p>
+      </div>
+    </section>
+
+    <div id="out" class="out"></div>
+  </main>
+
+  <aside class="card">
+    <h2>Try one of these</h2>
+    <div class="body" style="padding:8px">
+      <div class="examples" id="examples"></div>
+    </div>
+  </aside>
+</div>
+</div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? "").replace(/[&<>"]/g,
+  c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const usd = (c) => c === null || c === undefined ? "—"
+  : (c/100).toLocaleString("en-US",{style:"currency",currency:"USD"});
+
+async function health(){
+  try{
+    const r = await (await fetch("/ping")).json();
+    $("hdot").className = "dot ok";
+    $("htxt").innerHTML = `<b>healthy</b> · ${esc(r.brain)} brain · ${esc(r.data_backend)}`;
+  }catch{
+    $("hdot").className = "dot bad";
+    $("htxt").textContent = "runtime unreachable";
+  }
+}
+
+async function examples(){
+  const r = await (await fetch("/examples")).json();
+  $("examples").innerHTML = r.examples.map(e => `
+    <button class="ex" data-id="${e.claim_id}">
+      <span class="id num">${e.claim_id}</span>
+      <span class="lbl">· ${esc(e.label)}</span>
+      <div class="why">${esc(e.why)}</div>
+    </button>`).join("");
+  document.querySelectorAll(".ex").forEach(b =>
+    b.onclick = () => { $("claim").value = b.dataset.id; run(); });
+}
+
+function hint(){
+  const parts = [];
+  parts.push($("livebrain").checked ? "Live model on Bedrock — this spends money"
+                                    : "Mock brain");
+  parts.push($("livedata").checked ? "live client systems (needs `make up` + keys)"
+                                   : "bundled fixture");
+  if ($("tripwire").checked) parts.push("tripwire FORCED — expect a blocked output");
+  $("hint").textContent = parts.join(" · ") + ".";
+}
+["livedata","livebrain","tripwire"].forEach(id => $(id).onchange = hint);
+
+async function run(){
+  const btn = $("run");
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>Running…';
+  $("out").innerHTML = "";
+  try{
+    const res = await fetch("/invoke", {
+      method:"POST", headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({
+        claim_id: $("claim").value.trim(),
+        seat: $("seat").value,
+        live_data: $("livedata").checked,
+        live_brain: $("livebrain").checked,
+        tripwire: $("tripwire").checked,
+      })});
+    render(await res.json());
+  }catch(e){
+    $("out").innerHTML = `<section class="card"><div class="body err">
+      ${esc(e.message)}</div></section>`;
+  }finally{
+    btn.disabled = false; btn.textContent = "Run assessment";
+  }
+}
+$("run").onclick = run;
+$("claim").addEventListener("keydown", e => { if(e.key === "Enter") run(); });
+
+function accessBlock(a){
+  if(!a.resolved) return "";
+  const yn = (x) => x.allowed ? '<span class="pill approve">yes</span>'
+                              : '<span class="pill deny">no</span>';
+  return `<details open><summary>Access — ${esc(a.name)} (${esc(a.role)},
+      ${a.licensed ? "licensed" : "no licence"})</summary>
+    <table><tbody>
+      <tr><th>May view this claim</th><td>${yn(a.can_view)}</td>
+          <td class="note">${esc(a.can_view.reason)}</td></tr>
+      <tr><th>May confirm a decision</th><td>${yn(a.can_confirm)}</td>
+          <td class="note">${esc(a.can_confirm.reason)}</td></tr>
+    </tbody></table>
+    <p class="note">Two different questions with two different answers.
+      Enforced in code, never by the model.</p></details>`;
+}
+
+function render(d){
+  if(!d.ok){
+    $("out").innerHTML = `<section class="card"><div class="body">
+      <p class="err">${esc(d.error)}</p>
+      ${d.hint ? `<p class="note">${esc(d.hint)}</p>` : ""}</div></section>`;
+    return;
+  }
+  const v = d.verdict, cls = v.outcome.toLowerCase();
+  const blocked = v.blocked || d.coverage.blocked;
+
+  $("out").innerHTML = `
+  <section class="card">
+    <h2>Agent response</h2>
+    <div class="body">
+      ${blocked ? `<div class="blocked">
+        <b>Output blocked — not returned, not written back.</b>
+        <div class="note">${esc(d.coverage.tripwire_reason || v.blocked_reason || "")}</div>
+        <div class="note">Routed to a licensed adjuster instead.</div></div>` : ""}
+
+      <p class="narr">${esc(d.narrative)}</p>
+
+      <div class="verdict">
+        <div class="v"><div class="k">Decision</div>
+          <div class="val ${cls}">${esc(v.outcome)}</div></div>
+        <div class="v"><div class="k">Produced by</div>
+          <div class="val sm">${v.source === "model" ? "model judgment"
+            : '<span class="siu_referral">deterministic fallback</span>'}</div></div>
+        <div class="v"><div class="k">Confidence</div>
+          <div class="val num">${(v.confidence*100).toFixed(0)}%</div></div>
+        <div class="v"><div class="k">Net payable</div>
+          <div class="val num">${usd(v.settlement_cents)}</div></div>
+      </div>
+
+      <p class="note">
+        ${v.cited_clause_ids.length
+          ? `Cites ${v.cited_clause_ids.map(c=>`<code>${esc(c)}</code>`).join(", ")}
+             — each one retrieved from the policy corpus by
+             <code>search_policy_clauses</code>.`
+          : "No clause cited — this outcome rests on a deterministic check, or the output was blocked."}
+        ${v.requires_human_confirmation
+          ? " A licensed adjuster must confirm before anything reaches a claimant." : ""}
+      </p>
+
+      ${d.access ? accessBlock(d.access) : ""}
+
+      ${d.guardrails_fired.length ? `<p class="note">Guardrails fired:
+        ${d.guardrails_fired.map(g=>`<span class="pill" style="color:var(--warn)">${esc(g)}</span>`).join(" ")}</p>` : ""}
+
+      <details><summary>Evidence — what was read, across three systems</summary>
+        <table><tbody>
+          <tr><th>Systems</th><td>${d.evidence.systems.join(", ")}
+            ${d.evidence.sufficient ? "" : " — <span class='deny'>insufficient</span>"}</td></tr>
+          <tr><th>Policy</th><td>${d.evidence.policy_resolved ? "resolved"
+            : "<span class='deny'>not found in PAS</span>"}</td></tr>
+          <tr><th>Documents</th><td>${d.evidence.documents_on_file.join(", ") || "none"}</td></tr>
+          <tr><th>Missing</th><td>${d.evidence.missing_documents.join(", ") || "nothing"}</td></tr>
+          <tr><th>Quarantined</th><td>${d.evidence.quarantined.length
+            ? `<span class="deny">document ${d.evidence.quarantined.join(", ")} withheld from model context</span>`
+            : "none"}</td></tr>
+        </tbody></table></details>
+
+      <details><summary>Retrieval — ${d.coverage.retrieved.length} clauses,
+        ${d.coverage.cited.length} cited</summary>
+        <p class="note">A citation to a clause not in this list is a fabrication,
+          and the tripwire blocks it.</p>
+        <table><tbody>${d.coverage.retrieved.map(c=>`<tr>
+          <td><code>${esc(c)}</code></td>
+          <td>${d.coverage.cited.includes(c)
+            ? '<span class="pill approve">cited</span>' : ""}</td></tr>`).join("")}
+        </tbody></table></details>
+
+      <details><summary>What was arithmetic and what was judgment</summary>
+        <table><thead><tr><th>Decided by</th><th>Step</th><th>Detail</th></tr></thead>
+        <tbody>${d.decision_basis.map(b=>`<tr>
+          <td>${b.kind === "code" ? '<span class="kind-code">code</span>' : "judgment"}</td>
+          <td>${esc(b.name)}</td><td>${esc(b.detail).slice(0,160)}</td></tr>`).join("")}
+        </tbody></table></details>
+
+      <details><summary>Checks — ${d.checks.filter(c=>c.pass).length}/${d.checks.length} pass</summary>
+        <table><tbody>${d.checks.map(c=>`<tr>
+          <td>${c.pass ? '<span class="approve">PASS</span>'
+                       : '<span class="deny">FAIL</span>'}</td>
+          <td>${esc(c.name)}</td><td class="note">${esc(c.note)}</td></tr>`).join("")}
+        </tbody></table></details>
+
+      <details><summary>Trace — ${d.spans.length} spans, ${d.duration_ms} ms</summary>
+        <table><thead><tr><th>Span</th><th>Kind</th><th>ms</th></tr></thead>
+        <tbody>${d.spans.map(s=>`<tr><td>${esc(s.name)}</td>
+          <td>${s.kind === "code" ? '<span class="kind-code">code</span>' : esc(s.kind)}</td>
+          <td class="num">${s.duration_ms}</td></tr>`).join("")}</tbody></table></details>
+
+      <details><summary>Raw response</summary>
+        <pre class="json">${esc(JSON.stringify(d, null, 2))}</pre></details>
+
+      <p class="note">trace <code>${esc(d.trace_id)}</code> · ${esc(d.model)}
+        · ${d.duration_ms} ms</p>
+    </div>
+  </section>`;
+}
+
+health(); examples(); hint();
+</script>
+</body>
+</html>
