@@ -1,0 +1,145 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1180 860" width="1180" height="860"
+     font-family="Inter Tight, system-ui, sans-serif" role="img"
+     aria-label="ClaimSense solution architecture: three client systems, an integration layer enforcing access control, a pipeline split between deterministic code and model judgment, and a licensed adjuster confirming every outcome.">
+<style>
+  .t    { fill:#1a1820; font-size:13px }
+  .lbl  { fill:#1a1820; font-size:13.5px; font-weight:600 }
+  .h    { fill:#1a1820; font-size:15px; font-weight:700 }
+  .sm   { fill:#585461; font-size:11.5px }
+  .xs   { fill:#585461; font-size:10.5px }
+  .flow { fill:#521fcd; font-size:10.5px; font-weight:700 }
+  .box  { fill:#fdfdfd; stroke:#d9d6e0; stroke-width:1.5; rx:10 }
+  .client { fill:#f2f6f6; stroke:#1f4d52; stroke-width:1.5; rx:10 }
+  .code { fill:#f3effc; stroke:#521fcd; stroke-width:1.5; rx:10 }
+  .model{ fill:#fff8ee; stroke:#9a6a1b; stroke-width:1.5; rx:10 }
+  .guard{ fill:#fdf0ef; stroke:#b4332f; stroke-width:1.5; rx:8 }
+  .human{ fill:#eef7f1; stroke:#1b7f4e; stroke-width:1.8; rx:10 }
+  .zone { fill:none; stroke:#d9d6e0; stroke-width:1.2; stroke-dasharray:5 4; rx:12 }
+  .arrow{ stroke:#585461; stroke-width:1.6; fill:none; marker-end:url(#a) }
+  .barrier { stroke:#521fcd; stroke-width:2.5; stroke-dasharray:9 5 }
+</style>
+<defs>
+  <marker id="a" markerWidth="9" markerHeight="7" refX="8.5" refY="3.5" orient="auto">
+    <polygon points="0 0, 9 3.5, 0 7" fill="#585461"/>
+  </marker>
+</defs>
+
+<text x="24" y="30" class="h">ClaimSense — solution architecture</text>
+<text x="24" y="50" class="sm">Every flow labelled. The boundary between deterministic code and model judgment is drawn, not implied.</text>
+
+<!-- ============ CLIENT SYSTEMS ============ -->
+<rect x="24" y="70" width="1132" height="120" class="zone"/>
+<text x="38" y="90" class="xs">NORTHWIND MUTUAL — three vendors, three contracts, three credentials. No referential integrity between them.</text>
+
+<rect x="42" y="100" width="340" height="76" class="client"/>
+<text x="58" y="122" class="lbl">Claims Management (CMS)</text>
+<text x="58" y="140" class="sm">claim · first notice of loss · notes · fraud signals</text>
+<text x="58" y="157" class="sm">decisions written back</text>
+<text x="58" y="171" class="xs">the only system ClaimSense writes to</text>
+
+<rect x="398" y="100" width="340" height="76" class="client"/>
+<text x="414" y="122" class="lbl">Policy Administration (PAS)</text>
+<text x="414" y="140" class="sm">policy · dates · coverages · limits</text>
+<text x="414" y="157" class="sm">the policy clause corpus</text>
+<text x="414" y="171" class="xs">READ-ONLY — no write contract exists</text>
+
+<rect x="754" y="100" width="382" height="76" class="client"/>
+<text x="770" y="122" class="lbl">Document Store (DMS)</text>
+<text x="770" y="140" class="sm">documents · extracted text · poisoned flag</text>
+<text x="770" y="157" class="sm">requests for missing documents</text>
+<text x="770" y="171" class="xs">poisoned docs returned FLAGGED, never filtered</text>
+
+<path d="M212 176 L212 214" class="arrow"/><text x="150" y="198" class="flow">1 csk_cms_…</text>
+<path d="M568 176 L568 214" class="arrow"/><text x="506" y="198" class="flow">2 csk_pas_…</text>
+<path d="M945 176 L945 214" class="arrow"/><text x="883" y="198" class="flow">3 csk_dms_…</text>
+
+<!-- ============ INTEGRATION LAYER ============ -->
+<rect x="42" y="214" width="1094" height="70" class="box" style="fill:#f3effc;stroke:#521fcd;stroke-width:2"/>
+<text x="58" y="238" class="lbl">INTEGRATION LAYER — authentication · per-system scope · RBAC · idempotency · audit</text>
+<text x="58" y="258" class="t">RBAC is enforced HERE, never in the model. A model asked whether a seat may see a claim answers plausibly and occasionally wrongly.</text>
+<text x="58" y="274" class="sm">A key scoped to one system is refused by the others with 403. Every request is audited — denials as carefully as successes.</text>
+
+<path d="M400 284 L400 318" class="arrow"/><text x="300" y="305" class="flow">4 one claim bundle</text>
+
+<!-- ============ PIPELINE ============ -->
+<rect x="42" y="318" width="800" height="432" class="zone"/>
+<text x="56" y="338" class="xs">CLAIMSENSE PIPELINE</text>
+
+<!-- deterministic -->
+<rect x="58" y="348" width="768" height="104" class="code"/>
+<text x="74" y="370" class="lbl">▣ DETERMINISTIC — established BEFORE anything reasons</text>
+<text x="74" y="390" class="t">eligibility  in force at the date of loss? lapsed? inside the term?</text>
+<text x="74" y="407" class="t">clock  acknowledgement and decision deadlines      money  limit · deductible · coinsurance → payable, integer cents</text>
+<text x="74" y="424" class="t">risk score  Σ indicator weights vs a fixed threshold      identity  who may view, and separately who may confirm</text>
+<text x="74" y="442" class="xs">No model may run here. tests/test_boundary.py walks the AST and fails the build if one does.</text>
+
+<!-- the boundary -->
+<line x1="58" y1="466" x2="826" y2="466" class="barrier"/>
+<text x="300" y="461" class="flow">◀ 5  THE BOUNDARY — facts cross down; judgment never crosses back up ▶</text>
+
+<!-- model judgment -->
+<rect x="58" y="478" width="768" height="258" class="model"/>
+<text x="74" y="500" class="lbl">◆ MODEL JUDGMENT — each stage returns a strict typed output</text>
+
+<rect x="74" y="510" width="230" height="46" class="box"/>
+<text x="86" y="530" class="lbl">6  Triage</text>
+<text x="86" y="547" class="sm">peril · severity · the clock    Haiku</text>
+
+<rect x="320" y="510" width="230" height="46" class="box"/>
+<text x="332" y="530" class="lbl">7  Evidence</text>
+<text x="332" y="547" class="sm">reads all three systems    Haiku</text>
+
+<rect x="566" y="510" width="244" height="46" class="box"/>
+<text x="578" y="530" class="lbl">8  Coverage — the money step</text>
+<text x="578" y="547" class="sm">which clause governs    Sonnet</text>
+
+<rect x="74" y="566" width="476" height="34" class="guard"/>
+<text x="86" y="587" class="t">🛡 INPUT — quarantine poisoned documents before model context. Fails closed.</text>
+
+<rect x="566" y="566" width="244" height="34" class="guard"/>
+<text x="578" y="587" class="t">⌕ 9  search_policy_clauses</text>
+
+<rect x="74" y="610" width="736" height="34" class="guard"/>
+<text x="86" y="631" class="t">🛡 OUTPUT — citation tripwire: cited ⊄ retrieved → BLOCKED → routed to a human</text>
+
+<rect x="74" y="654" width="340" height="46" class="box"/>
+<text x="86" y="674" class="lbl">10  Risk</text>
+<text x="86" y="691" class="sm">what the indicators amount to    Haiku</text>
+
+<rect x="430" y="654" width="380" height="46" class="box"/>
+<text x="442" y="674" class="lbl">11  Adjudicate — one of four outcomes</text>
+<text x="442" y="691" class="sm">fixed precedence    Haiku</text>
+
+<rect x="74" y="708" width="736" height="22" class="guard"/>
+<text x="86" y="724" class="xs">🛡 determinism override → re-stamped deterministic_fallback    🛡 PII scan → synthetic-only invariant</text>
+
+<!-- ============ RIGHT COLUMN ============ -->
+<path d="M842 534 L902 534" class="arrow"/>
+<text x="846" y="527" class="flow">12 idempotent</text>
+
+<rect x="902" y="440" width="234" height="190" class="box"/>
+<text x="918" y="464" class="lbl">Claims Desk</text>
+<text x="918" y="482" class="sm">Northwind's own portal</text>
+<text x="918" y="506" class="t">evidence · cited clauses, in full</text>
+<text x="918" y="523" class="t">the decision · confirm / override</text>
+<text x="918" y="548" class="xs">The recommendation lands with</text>
+<text x="918" y="563" class="xs">confirmed_by NULL. It is not a</text>
+<text x="918" y="578" class="xs">decision until a human says so.</text>
+<text x="918" y="602" class="xs">Model verdicts and deterministic</text>
+<text x="918" y="617" class="xs">fallbacks wear different badges.</text>
+
+<path d="M1019 630 L1019 666" class="arrow"/>
+<text x="876" y="652" class="flow">13 a LICENSED adjuster</text>
+
+<rect x="902" y="666" width="234" height="84" class="human"/>
+<text x="918" y="690" class="lbl">Licensed adjuster</text>
+<text x="918" y="709" class="t">confirms every outcome</text>
+<text x="918" y="727" class="xs">license_number IS NULL → refused.</text>
+<text x="918" y="742" class="xs">The agent's own seat has none.</text>
+
+<!-- ============ FOOTER ============ -->
+<rect x="24" y="768" width="1132" height="72" class="zone"/>
+<text x="40" y="790" class="lbl">SYNTHETIC DATA ONLY — no production or personally identifiable data at any stage</text>
+<text x="40" y="810" class="sm">Fixed seed, reserved .invalid / .example domains. The clause corpus is synthetic wording modelled on an ISO-style form.</text>
+<text x="40" y="828" class="sm">Every judgment states the evidence it relied on. Every coverage conclusion cites clauses that were actually retrieved.</text>
+</svg>
