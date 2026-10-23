@@ -21,7 +21,7 @@ PY       := $(shell [ -x agent/.venv/bin/python ] && echo agent/.venv/bin/python
 export CLAIMSENSE_DB_URL      := $(DB_URL)
 export CLAIMSENSE_CONSOLE_URL := $(CONSOLE)
 
-.PHONY: help up seed keys web web-dev agent serve tripwire eval golden test verify venv show-sdk doctor down clean
+.PHONY: help setup up seed keys web web-dev agent serve tripwire eval golden test verify venv show-sdk doctor reset down clean
 
 help: ## show this list
 	@grep -hE '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | \
@@ -77,6 +77,19 @@ verify: ## the $$0 gate: prerequisites + eval + unit tests. Run this first.
 	@$(MAKE) --no-print-directory test
 	@echo "verify: OK"
 
+setup: ## one-time: config files + the agent venv
+	@if [ -f .env ]; then echo "    .env       exists, left alone"; \
+	 else cp .env.example .env; echo "    .env       created from .env.example"; fi
+	@if [ -f keys.env ]; then echo "    keys.env   exists, left alone"; \
+	 else cp keys.env.example keys.env && chmod 600 keys.env; \
+	   echo "    keys.env   created (mode 0600, gitignored)"; fi
+	@$(MAKE) --no-print-directory venv
+	@echo ""
+	@echo "    Both demos run with keys.env empty. Next:"
+	@echo "      docker compose up -d --wait"
+	@echo "      ./week1_demo.sh"
+	@echo ""
+
 venv: ## create the agent venv and install dev deps (needs uv)
 	cd agent && uv venv --python 3.11 .venv && \
 	  uv pip install --python .venv/bin/python --quiet "pytest>=8.0"
@@ -88,6 +101,13 @@ doctor: ## check prerequisites and report what is missing
 	@echo "node   : $$(node -v 2>/dev/null || echo MISSING)"
 	@echo "python : $$(python3 -V 2>/dev/null || echo MISSING)"
 	@echo "db     : $$($(COMPOSE) exec -T db pg_isready -U claimsense 2>/dev/null || echo 'not running — make up')"
+
+reset: ## wipe decisions and return the queue to its Week 1 state
+	@$(COMPOSE) exec -T db psql -U claimsense -d claimsense -q -c \
+	  "TRUNCATE cms.decisions; TRUNCATE dms.document_requests; \
+	   TRUNCATE platform.agent_runs; TRUNCATE platform.idempotency_keys; \
+	   UPDATE cms.claims SET status='intake';"
+	@echo "==> queue reset: no decisions, every claim back to intake"
 
 down: ## stop Postgres (data survives)
 	$(COMPOSE) down

@@ -25,13 +25,41 @@ pause(){ [ "${NOPAUSE:-0}" = "1" ] || { printf "\n${DIM}  [enter]${RESET}"; read
 
 psql_() { docker compose exec -T db psql -U claimsense -d claimsense -qtA "$@"; }
 
+preflight() {
+  local missing=0
+  command -v docker >/dev/null || { printf "  ✗ docker not found\n"; missing=1; }
+  docker info >/dev/null 2>&1 || { printf "  ✗ the docker daemon is not running\n"; missing=1; }
+  command -v python3 >/dev/null || { printf "  ✗ python3 not found\n"; missing=1; }
+  if [ "$missing" = "1" ]; then
+    printf "\n  Install what is missing, then run this again.\n\n"
+    exit 1
+  fi
+}
+
+# Week 1 is the system BEFORE any automation, so the demo refuses to run
+# against a database that already has recommendations in it. Showing the
+# manual workflow beside twenty agent decisions would be showing nothing.
+require_clean_slate() {
+  local n
+  n=$(psql_ -c "SELECT count(*) FROM cms.decisions;" 2>/dev/null || echo 0)
+  if [ "${n:-0}" != "0" ]; then
+    printf "\n${YELLOW}  This database already holds %s decision(s).${RESET}\n" "$n"
+    printf "  Week 1 is the system before any automation, so it needs a clean slate.\n\n"
+    printf "  Reset it with:   ${BOLD}make reset${RESET}\n\n"
+    exit 1
+  fi
+}
+
 printf "${BOLD}Week 1 — Northwind Mutual, Claims Desk${RESET}\n"
 printf "${DIM}The existing system. Manual adjudication, no automation.${RESET}\n"
+
+preflight
 
 step "1. Bring up Northwind's estate"
 note "Three systems behind one portal: claims management, policy"
 note "administration, and the document store."
 docker compose up -d --wait db seed web >/dev/null 2>&1
+require_clean_slate
 ok "Claims Desk is up on http://localhost:3200"
 
 step "2. The queue as an adjuster finds it"

@@ -10,262 +10,281 @@ that workflow refactored into an automated pipeline.
 
 What stays human is the **decision itself**: every outcome is produced as a
 recommendation and a licensed adjuster confirms it before anything reaches a
-claimant. That is a regulatory requirement and a deliberate design constraint,
-not a hedge about the automation's quality.
+claimant. That is a regulatory requirement and a design constraint, not a
+hedge about the automation's quality.
 
 ```bash
-docker compose up          # the whole stack: db + schemas + seed + console on :3200
-make verify                # the $0 gate: prerequisites + eval + unit tests
-make agent CLAIM=4409      # work one claim end to end, traced
+make setup          # one-time
+./week1_demo.sh     # the existing manual system
+./week3_demo.sh     # the same workflow, automated
 ```
 
-None of that needs an AWS account, an API key, or the internet.
-
 ---
 
-## The four outcomes
+# Getting started
 
-| Outcome | When |
+## 1. Prerequisites
+
+| | Needed for | Check |
+|---|---|---|
+| **Docker** (running) | Postgres and the portal | `docker info` |
+| **Python 3.11+** | the agent | `python3 -V` |
+| [**uv**](https://docs.astral.sh/uv/) | creates the agent's virtualenv | `uv --version` |
+| **Node 20+** | only if you run the portal *outside* Docker | `node -v` |
+
+No AWS account and no API key. The whole thing runs on the mock brain — zero
+network, zero spend — and that is the path CI measures, not a reduced one.
+
+```bash
+make doctor     # reports what is missing
+```
+
+## 2. Configure
+
+```bash
+cd claimsense
+make setup
+```
+
+That does three things:
+
+| | |
 |---|---|
-| `APPROVE` | coverage confirmed, policy in force, within limits, no fraud signal |
-| `DENY` | excluded peril, policy lapsed, or the loss fell outside the term |
-| `MORE_INFO` | the file cannot support a decision — the missing documents are named |
-| `SIU_REFERRAL` | fraud indicators cross the referral threshold |
+| `cp .env.example .env` | **wiring** — base URLs, the local database DSN, model ids. No secrets; safe on a screenshare. |
+| `cp keys.env.example keys.env` | **secrets** — gitignored, mode `0600`. Leave every value blank for the demos. |
+| `make venv` | the agent's virtualenv with `pytest`, which the Week 3 demo uses |
+
+**You do not need to edit either file to run the demos.** Fill in `keys.env`
+only when you want to exercise the live Bedrock path or the write-back to the
+portal — see [Going further](#going-further).
+
+## 3. Bring up the stack
+
+```bash
+docker compose up -d --wait
+```
+
+About 15 seconds from nothing. It starts Postgres, applies the three
+client-system schemas, loads the synthetic seed, and serves the portal.
+
+| | |
+|---|---|
+| Portal | <http://localhost:3200> — **Northwind Mutual, Claims Desk** |
+| Postgres | `localhost:5433` *(not 5432 — see [Ports](#ports))* |
+
+```bash
+docker compose ps      # both should read (healthy)
+```
 
 ---
+
+# Week 1 — the existing system
+
+```bash
+./week1_demo.sh
+```
+
+Northwind has run Claims Desk for years. **There is no automation in it.** The
+demo walks the current manual workflow and the problem the engagement exists to
+solve.
+
+It presses `[enter]` between sections. To run straight through:
+
+```bash
+NOPAUSE=1 ./week1_demo.sh
+```
+
+### What it shows
+
+| Step | |
+|---|---|
+| 1 | Northwind's estate comes up |
+| 2 | **The queue** — 60 claims, none worked, the open exposure |
+| 3 | **One claim, three systems** — what assembling claim 4414 actually takes |
+| 4 | **Searching the policy wording by hand** — the step with no real system behind it |
+| 5 | **Where the time goes** — the blank decision form, and the ageing queue |
+
+Step 4 is the one to watch. Searching the wording for **"water"** returns five
+clauses, of which two decide the claim and three are noise — and one is an
+*exception* to the other, which nothing in the portal tells you. Searching the
+claimant's own word, **"leaking"**, returns **zero**, because the form says
+"deterioration".
+
+### Look around the portal yourself
+
+<http://localhost:3200>
+
+| Page | |
+|---|---|
+| Overview | the backlog, and the current process written out |
+| Claims | the queue — every claim reads "not worked" |
+| **Claims → 4414** | the workbench. The decision panel is a **blank form**: outcome, clause ids typed from memory, the payable amount worked out on paper |
+| Policy wording | the manual search. Try `water`, then `leaking` |
+
+> **Week 1 needs a clean slate.** The demo refuses to run if the database
+> already holds recommendations — showing the manual workflow beside twenty
+> agent decisions would be showing nothing. If you have run Week 3's
+> write-back, reset with `make reset`.
+
+---
+
+# Week 3 — the same workflow, automated
+
+```bash
+./week3_demo.sh
+```
+
+Everything Week 1 showed an adjuster doing by hand, ClaimSense now does. Runs
+entirely on the mock brain — no key, no network, no spend.
+
+### What it shows
+
+| Step | |
+|---|---|
+| 1 | **One claim end to end** — claim 4414, the water loss, traced |
+| 2 | **`search_policy_clauses`** — the tool that replaces the manual search, on the claim that defeated it |
+| 3 | **The boundary** — what is arithmetic, what is judgment, enforced by a test |
+| 4 | **The blocked case** — a $17,500 approval becoming a human review |
+| 5 | **Prompt injection** — in a document, and in the claimant's own words |
+| 6 | **Arithmetic beats eloquence** — a plausible narrative denied by a date |
+| 7 | **The gate** — 20 cases, all four outcomes, 5/5 adversarial |
+| 8 | **The gate has teeth** — regress three cases, watch the exit code |
+| 9 | **Driving it without the portal** |
+
+Step 4 is the one M2 asks to see. Same claim, one flag apart:
+
+| | Normal | `--tripwire` |
+|---|---|---|
+| Outcome | `APPROVE` | `MORE_INFO` |
+| Settlement | **$17,500.00** | — |
+| Citations | `HO3-I-A-1` | — |
+
+```
+⛔ coverage conclusion states a money-moving outcome with no policy citation
+⛔ OUTPUT BLOCKED — not returned, not written back
+✓ routed to a licensed adjuster instead
+```
+
+### Drive the agent yourself
+
+```bash
+make serve      # http://127.0.0.1:8080
+```
+
+A test client **served by the agent**, on its own port, with no portal
+involved. Pick a claim, pick the seat to act as, tick *force the tripwire*, and
+read the whole run: the narrative, the verdict, which clauses were *retrieved*
+against which were *cited*, whether that seat may view and separately may
+confirm, and the spans.
+
+Worth trying: claim **4409** (injection in a document), **4420** (injection in
+the claimant's own words), **4412** (a policy reference that does not resolve).
+
+---
+
+# Running the pieces
+
+| Command | |
+|---|---|
+| `make verify` | the **$0 gate** — prerequisites, eval, 220 tests |
+| `make agent CLAIM=4414` | work one claim, traced |
+| `make tripwire` | the blocked case on its own |
+| `make eval` / `make golden` | the gates CI runs |
+| `make serve` | the agent test client on `:8080` |
+| `make show-sdk` | the real Agents SDK wiring, printed |
+| `make reset` | wipe decisions, back to the Week 1 state |
+| `make down` | stop Postgres (`make clean` also drops the volume) |
+| `make help` | everything |
+
+---
+
+# Going further
+
+Both demos run with `keys.env` empty. Fill it in for:
+
+**The write-back** — the recommendation landing in Claims Desk.
+
+```bash
+make keys          # mints three scoped keys straight into keys.env, mode 0600
+cd agent && PYTHONPATH=src ../agent/.venv/bin/python -m claimsense_agent \
+  run --claim 4414 --live --mock --write
+```
+
+Then open <http://localhost:3200/claims/4414> — the recommendation is there,
+with the clause text it was grounded in and a confirm control that has not
+been used. *(This is Week 4 territory; it works today.)*
+
+**The live model** — the real Agents SDK over LiteLLM to AWS Bedrock. Put your
+AWS credentials in `keys.env` and drop `--mock`. This spends money; the mock
+path does not.
+
+---
+
+# Reference
+
+## Ports
+
+| | | Why |
+|---|---|---|
+| Portal | **3200** | Meridian's reference console holds 3100 |
+| Postgres | **5433** | Meridian's holds 5432 — both are often up at once |
+| Agent test client | **8080** | loopback only |
 
 ## What is code and what is judgment
 
-The split is the architecture, and it is enforced rather than described.
-
-| Deterministic — `agent/src/claimsense_agent/determinism/` | Model judgment — `agent/src/claimsense_agent/agents/` |
+| Deterministic — `agent/.../determinism/` | Model judgment — `agent/.../agents/` |
 |---|---|
-| identity, access control, who may confirm | reading the file: the FNOL, the notes, the documents |
-| policy dates: in force, lapse, reporting window | which clause governs — **must cite retrieved clause ids** |
-| money: deductible, limits, coinsurance, settlement | what the fraud indicators amount to together |
+| identity, access control, who may confirm | reading the file: FNOL, notes, documents |
+| policy dates: in force, lapse, reporting window | which clause governs — **must cite retrieved ids** |
+| money: deductible, limits, coinsurance | what the fraud indicators amount to together |
 | the fraud **score** arithmetic | the drafted decision and its rationale |
 
-`tests/test_boundary.py` walks the AST of every module under `determinism/` and
-fails the build if one imports an SDK, `litellm` or `boto3` — or if `money.py`
-grows a float literal or a true division outside its display helper. A line that
-only exists in a diagram is a line that erodes.
+Enforced, not described: `agent/tests/test_boundary.py` walks the AST of every
+module under `determinism/` and fails the build if one imports an agent SDK,
+`litellm` or `boto3` — or if the money module grows a float literal.
 
 A verdict the model reasoned to is stamped `source: "model"`. One a
-deterministic check substituted is stamped `source: "deterministic_fallback"`.
-They are never the same kind of output: it is a field on the type, a column in
-`cms.decisions`, and a differently-styled badge in the console.
-
----
-
-## The blocked case
-
-The output guardrail is the control that matters, so here it is firing.
-`--tripwire` makes the Coverage agent state a money-moving conclusion with no
-citation — the "confidently wrong" rehearsal. Same claim, same data, one flag.
-
-**Normal run** — `make agent CLAIM=4401`:
-
-```
-◆ coverage_agent.decide [agent] span_a8c69264
-    finding                covered
-    · The loss is covered: a fire loss falls within the policy's grant of
-      coverage [HO3-I-A-1]. Settlement is net of the policy deductible.
-🛡 output_guardrail: citation_tripwire [guardrail] span_bd3ea171
-    § coverage conclusion grounded in ['HO3-I-A-1']
-    OUTCOME                APPROVE
-    settlement             $17,500.00
-    citations              ['HO3-I-A-1']
-```
-
-**Blocked** — `make tripwire CLAIM=4401`:
-
-```
-🛡 output_guardrail: citation_tripwire [guardrail] span_3938a11b
-    ⛔ coverage conclusion states a money-moving outcome with no policy citation
-    ⛔ OUTPUT BLOCKED — not returned, not written back
-    ✓ routed to a licensed adjuster instead
-    OUTCOME                MORE_INFO
-    settlement             —
-    citations              —
-
-│ [FAIL] money-moving output is grounded            coverage conclusion st…
-│ guardrails fired: citation_tripwire
-```
-
-A claim that would have settled for **$17,500 pays nothing** and goes to a
-human instead. Confidently wrong became safely escalated.
-
-The tripwire catches two distinct failures, and the second is the worse one:
-
-* a money-moving statement citing **nothing**
-* a statement citing a clause that was **never retrieved** — a fabricated
-  citation, which is worse precisely because it looks grounded
-
-Full captures in [`docs/evidence/`](docs/evidence/).
-
----
-
-## The other three guardrails
-
-| | Fires when | What happens |
-|---|---|---|
-| **Quarantine** (input) | a document carries text aimed at a model | dropped **before** model context, and logged. Fails closed. |
-| **Determinism override** (output) | the model approves on a lapsed policy, or over a limit | the check wins; the verdict is re-stamped `deterministic_fallback` |
-| **PII scan** (output) | personal data appears in a drafted output | blocked — enforces the synthetic-only invariant |
-
-Quarantine **drops rather than sanitises**. Stripping the injected sentence
-assumes the sanitiser caught every variant, and an attacker only needs the one
-it missed.
-
-It also has a cost, and the system pays it. On claim 4409 the poisoned file is
-the only estimate, so quarantining it leaves a fire claim with no estimate —
-the outcome is `MORE_INFO`, not `APPROVE`. An attacker cannot complete a claim
-file by submitting a hostile document.
-
-**Claim 4420 is the hard one.** The injection is in the claimant's *own first
-notice of loss*, which is evidence and must be read — so it cannot be
-quarantined. It is fenced as untrusted content instead, and the citation
-tripwire is what makes a successful injection harmless. The claim still comes
-back `DENY`, citing `HO3-I-EXCL-3`, which is the correct answer.
-
----
-
-## The eval gate
-
-```
-$ make eval
-eval suite: smoke  20 cases · brain=mock · min-pass=90%
-
-  pass rate      100%  (20/20)   threshold 90%
-  outcomes seen  {'APPROVE': 5, 'DENY': 8, 'MORE_INFO': 5, 'SIU_REFERRAL': 2}
-  adversarial    5/5 held
-  guardrails     {'quarantine_poisoned': 1}
-
-GATE PASSED
-```
-
-The twenty cases are not a separate fixture file — they are planted in the seed
-(claims 4401–4420), each carrying the outcome a correct pipeline must reach.
-An eval case cannot drift from the data it is about.
-
-Three ways to fail, by design:
-
-* **rate** below `--min-pass`
-* **an outcome never produced** — a suite that never reaches `SIU_REFERRAL` is
-  not testing fraud routing, however green the average looks
-* **any `ADV-*` regression** on the golden gate, with zero tolerance.
-  Averaging a safety failure away against nineteen easy passes is how a
-  guardrail regression ships
-
-The five adversarial cases: a poisoned estimate, a loss one day before
-inception, a claim exactly at the limit, a policy reference that does not
-resolve, and an injection in the claimant's own words.
-
----
-
-## CI — a failing gate blocks the image push
-
-`.github/workflows/eval-gate.yml`:
-
-```
-test ─────────┐
-eval ─────────┼──▶ build-and-push       needs: [test, eval, integration]
-integration ──┘
-```
-
-Structural, not conditional. A red gate means the push job is never scheduled —
-there is no step inside it to reorder or skip, and no `continue-on-error`
-anywhere in the file.
-
----
-
-## Running it
-
-```bash
-docker compose up                                   # everything, one command
-docker compose run --rm agent run --claim 4409 --mock
-```
-
-Or without containers:
-
-| Target | What it does |
-|---|---|
-| `make up` | Postgres, the three schemas, the synthetic seed, scoped keys |
-| `make web` | the console on `:3200` |
-| `make agent CLAIM=…` | work one claim end to end, traced |
-| `make tripwire` | the blocked case above |
-| `make verify` | the $0 gate — prerequisites, eval, unit tests |
-| `make eval` / `make golden` | the gates CI runs |
-| `make serve` | the agent test client on `:8080` — no portal involved |
-| `make show-sdk` | print the real Agents SDK wiring |
-
-### Configuration
-
-Two files, and the split is deliberate:
-
-* **`.env`** — wiring. Base URLs, the local DSN, model ids. Safe on a screenshare.
-* **`keys.env`** — credentials. Gitignored, written at mode `0600` by `make keys`.
-
-`cat .env` during a demo cannot leak a key, and the one file that must never be
-committed stays small enough to check by eye. Copy `.env.example` and
-`keys.env.example` to start.
-
----
-
-## The brain
-
-`--mock` is the default, and mock **is** the CI brain: deterministic reasoners,
-no key, no network, $0. Every milestone gate is measured on it.
-
-`--live` runs the real **OpenAI Agents SDK** over **LiteLLM → AWS Bedrock**.
-Model routing is a deliverable, not an optimisation — the cheap model does the
-high-volume stages and **Sonnet touches exactly one step**, Coverage, where the
-money is.
-
-| Stage | Model | Why |
-|---|---|---|
-| Triage | Haiku 4.5 | classification, high volume |
-| Evidence | Haiku 4.5 | summarisation across three systems |
-| **Coverage** | **Sonnet 4.5** | the money step, and the only one that concludes on cover |
-| Adjudicate | Haiku 4.5 | combination under fixed precedence |
-
-Swapping the brain changes how the four stages reason and nothing else. The
-pipeline, guardrails, scorecard and write-back are identical on both paths —
-which is the architecture's whole claim, so it is literally true rather than
-approximately true.
-
----
+deterministic check substituted is stamped `"deterministic_fallback"`. A
+decision an adjuster typed unaided is `"manual_adjuster"`. They are never the
+same kind of output.
 
 ## Synthetic data only
 
-No production or personally identifiable data at any stage. The seed is
-generated from a fixed seed (7731), so every `make up` produces the same sixty
-claims. Email addresses use the reserved `.invalid` and `.example` domains and
-can never route.
-
-The policy corpus is synthetic wording modelled on the shape of an ISO-style
-form. It is not any insurer's actual policy and must not be used as one.
-
----
+No production or personally identifiable data at any stage. Fixed seed (7731),
+so every `make up` produces the same sixty claims. Email addresses use the
+reserved `.invalid` and `.example` domains and can never route. The policy
+corpus is synthetic wording modelled on the *shape* of an ISO-style form — not
+any insurer's actual policy, and not to be used as one.
 
 ## Layout
 
 ```
-agent/        the pipeline: four agents, determinism, retrieval, guardrails, evals
+agent/        the pipeline, determinism, retrieval, guardrails, evals, test client
 platform/
   db/         the three client-system schemas + the synthetic seed generator
-  web/        the console and the three system APIs (Next.js, JS + JSX)
+  web/        Claims Desk and the three system APIs (Next.js, JS + JSX)
 docs/
-  brief/      the client brief this engagement started from
+  week1/      discovery — charter, stakeholders, success criteria, eval cases
+  week2/      SoW, pricing, risk register, architecture, data shapes
+  week3/      the automated workflow
   evidence/   captured runs: the blocked case, quarantine, the gates
   openapi/    generated from the Zod contracts
 ```
 
+## Troubleshooting
+
+| | |
+|---|---|
+| `docker daemon is not running` | start Docker Desktop |
+| Week 1 refuses to run | `make reset` — it needs a clean slate |
+| `pytest is not available` | `make venv` |
+| Portal 500s on every page | the seed did not finish: `docker compose logs seed` |
+| Agent 401s on `--live` | `make keys`, then retry |
+| Port already in use | something else holds 3200/5433 — `make down`, or change `PORT` |
+
 ## Where to go next
 
-1. [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — every flow, with the
-   deterministic/model boundary marked
-2. [`docs/CONTRACTS.md`](docs/CONTRACTS.md) — the three typed contracts and the
-   idempotency rules
-3. [`DECISIONS.md`](DECISIONS.md) — the architectural decisions and why
-4. `make show-sdk` — the Agents SDK wiring, in full
+1. [`docs/week1/`](docs/week1/) · [`docs/week2/`](docs/week2/) · [`docs/week3/`](docs/week3/) — the milestone bundles
+2. [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — every flow, with the boundary marked
+3. [`docs/CONTRACTS.md`](docs/CONTRACTS.md) — the three contracts and the idempotency rules
+4. [`DECISIONS.md`](DECISIONS.md) — what was decided, and what it cost

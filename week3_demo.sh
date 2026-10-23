@@ -24,7 +24,31 @@ ok()   { printf "${GREEN}  ✓ %s${RESET}\n" "$*"; }
 pause(){ [ "${NOPAUSE:-0}" = "1" ] || { printf "\n${DIM}  [enter]${RESET}"; read -r _; }; }
 
 PY=$([ -x agent/.venv/bin/python ] && echo ../agent/.venv/bin/python || echo python3)
+
+preflight() {
+  local missing=0
+  command -v docker >/dev/null || { printf "  ✗ docker not found\n"; missing=1; }
+  docker info >/dev/null 2>&1 || { printf "  ✗ the docker daemon is not running\n"; missing=1; }
+  command -v python3 >/dev/null || { printf "  ✗ python3 not found\n"; missing=1; }
+  if [ "$missing" = "1" ]; then
+    printf "\n  Install what is missing, then run this again.\n\n"
+    exit 1
+  fi
+}
+
+# Step 3 runs the boundary tests, which need pytest. Checking up front beats a
+# traceback nine screens into a walkthrough.
+require_pytest() {
+  if ! (cd agent && PYTHONPATH=src "$PY" -c "import pytest" >/dev/null 2>&1); then
+    printf "\n${YELLOW}  pytest is not available to the agent.${RESET}\n"
+    printf "  Create the virtualenv first:   ${BOLD}make venv${RESET}\n\n"
+    exit 1
+  fi
+}
 agent() { (cd agent && PYTHONPATH=src "$PY" -m claimsense_agent "$@"); }
+
+preflight
+require_pytest
 
 printf "${BOLD}Week 3 — ClaimSense: the workflow, automated${RESET}\n"
 printf "${DIM}Mock brain. No key, no network, \$0 — the same path CI measures.${RESET}\n"
