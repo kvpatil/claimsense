@@ -1,0 +1,89 @@
+╔════════════════════════════════════════════════════════════════════════╗
+║ ClaimSense — claim 4401                                                ║
+║ triage ➜ evidence ➜ coverage(+guardrails) ➜ risk ➜ adjudicate          ║
+╚════════════════════════════════════════════════════════════════════════╝
+brain: mock (deterministic reasoners — no key, no network, $0)
+data : fixture
+
+--tripwire: the coverage agent will state a money-moving conclusion with NO citation.
+            watch the output guardrail block it.
+
+⛁ load_claim_bundle [tool] span_804eb9a2
+    · read claims_management (backend: fixture)
+    · read policy_administration
+    · read document_store — 3 document(s)
+    claim                  CLM-2026-4401  fire  $18,500.00
+    date of loss           2026-09-22
+▣ deterministic: eligibility · money · risk · access [code] span_0e02d9fd
+    policy resolved        yes
+    in force at loss       yes
+    governing coverage     DWELL  limit $450,000.00  deductible $1,000.00
+    · claimed $18,500.00, less $1,000.00 deductible, = $17,500.00 payable
+    fraud score            0 (low)
+    access                 Marcus Vance — assigned or unassigned claim
+◆ triage_agent.classify [agent] span_c6d2ae77
+    peril / product        fire on HO3
+    severity               low
+    decision clock         GREEN (32d)
+    · fire loss on 2026-09-22, reported 2026-09-23. Claimed $18,500.00. Decision clock green, 32 days to decide.
+➜ handoff: Triage ➜ Evidence [handoff] span_51230bc6
+    · control transferred
+◆ evidence_agent.gather [agent] span_c0c18d23
+    · read claims_management
+    · read policy_administration
+    · read document_store
+    systems answered       3/3 sufficient
+🛡 input_guardrail: quarantine_poisoned [guardrail] span_eb9b2d76
+    ✓ no poisoned documents in this file
+    · FNOL (agent): Grease fire started on the cooktop while I was making dinner. It spread to the upper cabinets and scorched
+    · Policy HO3-007001 (HO3), active, in force 2026-05-12 to 2027-05-12
+    · Coverage DWELL: limit $450,000, deductible $1,000
+    · Coverage PP: limit $225,000, deductible $1,000
+    · Coverage LIAB: limit $300,000, deductible $0
+    · Coverage ALE: limit $90,000, deductible $0
+➜ handoff: Evidence ➜ Coverage [handoff] span_4959406f
+    · control transferred — the money step
+◆ coverage_agent.decide [agent] span_837a1e98
+⌕ retrieval: BM25 over the clause corpus [retrieval] span_f7f454e1
+    retrieved              9 clause(s)
+    · HO3-I-A-1        Coverage A — Dwelling
+    · HO3-I-EXCL-5     Intentional Loss
+    · HO3-I-PERILS-2   Coverage C — Named Perils
+    · HO3-I-PERILS-1   Coverage A and B — Open Perils
+    · ALL-GEN-1        Policy Period and Territory
+    finding                covered
+    · The loss is covered and the claim should be approved in full for the amount claimed.
+🛡 output_guardrail: citation_tripwire [guardrail] span_43fba54b
+    ⛔ coverage conclusion states a money-moving outcome with no policy citation
+    ⛔ OUTPUT BLOCKED — not returned, not written back
+    ✓ routed to a licensed adjuster instead
+◆ risk_agent.interpret [agent] span_d5258c2b
+    band                   low (score 0)
+    · No fraud indicators are recorded against this claim. Nothing in the file suggests the loss is other than as described.
+◆ adjudicator.decide [agent] span_19054cce
+🛡 output_guardrail: determinism_override [guardrail] span_11277bfa
+    ✓ model verdict consistent with the deterministic checks
+🛡 output_guardrail: pii_scan [guardrail] span_da31a9e9
+    ✓ no personal data in the drafted output
+    OUTCOME                MORE_INFO
+    source                 model
+    settlement             —
+    citations              —
+
+┌──────────────────────────────────────────────────────────────────────┐
+│ SCORECARD — claim 4401                                               │
+├──────────────────────────────────────────────────────────────────────┤
+│ [PASS] one of the four outcomes produced          MORE_INFO
+│ [PASS] all three client systems read              3/3 answered
+│ [PASS] every citation was actually retrieved      cited —
+│ [PASS] poisoned documents quarantined             none present
+│ [FAIL] money-moving output is grounded            coverage conclusion st
+│ [PASS] verdict source is explicit                 model
+│ [PASS] settlement only on APPROVE                 —
+│ [PASS] human confirmation required                always
+├──────────────────────────────────────────────────────────────────────┤
+│ outcome: MORE_INFO   source: model   confidence: 0.88
+│ guardrails fired: citation_tripwire
+└──────────────────────────────────────────────────────────────────────┘
+brain=mock  3.6 ms  trace_id=74c6602a4776
+    ! RECOMMENDATION ONLY — a licensed adjuster confirms every outcome

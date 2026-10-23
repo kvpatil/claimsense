@@ -1,0 +1,86 @@
+╔════════════════════════════════════════════════════════════════════════╗
+║ ClaimSense — claim 4409                                                ║
+║ triage ➜ evidence ➜ coverage(+guardrails) ➜ risk ➜ adjudicate          ║
+╚════════════════════════════════════════════════════════════════════════╝
+brain: mock (deterministic reasoners — no key, no network, $0)
+data : fixture
+
+⛁ load_claim_bundle [tool] span_74dac191
+    · read claims_management (backend: fixture)
+    · read policy_administration
+    · read document_store — 2 document(s)
+    claim                  CLM-2026-4409  fire  $29,000.00
+    date of loss           2026-09-28
+▣ deterministic: eligibility · money · risk · access [code] span_5a679475
+    policy resolved        yes
+    in force at loss       yes
+    governing coverage     DWELL  limit $450,000.00  deductible $1,000.00
+    · claimed $29,000.00, less $1,000.00 deductible, = $28,000.00 payable
+    fraud score            0 (low)
+    access                 Dana Okafor — assigned or unassigned claim
+◆ triage_agent.classify [agent] span_357286fb
+    peril / product        fire on HO3
+    severity               low
+    decision clock         GREEN (38d)
+    · fire loss on 2026-09-28, reported 2026-09-29. Claimed $29,000.00. Decision clock green, 38 days to decide.
+➜ handoff: Triage ➜ Evidence [handoff] span_4e327a01
+    · control transferred
+◆ evidence_agent.gather [agent] span_93f766e2
+    · read claims_management
+    · read policy_administration
+    · read document_store
+    systems answered       3/3 sufficient
+🛡 input_guardrail: quarantine_poisoned [guardrail] span_af195163
+    ⛔ QUARANTINED document 16 — injected instruction NOT ingested into model context
+    quarantined            [16]
+    missing                estimate
+    · FNOL (agent): A candle was left burning in the living room and set fire to the curtains and the wall behind them.
+    · Policy HO3-007009 (HO3), active, in force 2026-03-28 to 2027-03-28
+    · Coverage DWELL: limit $450,000, deductible $1,000
+    · Coverage PP: limit $225,000, deductible $1,000
+    · Coverage LIAB: limit $300,000, deductible $0
+    · Coverage ALE: limit $90,000, deductible $0
+➜ handoff: Evidence ➜ Coverage [handoff] span_b02ad27a
+    · control transferred — the money step
+◆ coverage_agent.decide [agent] span_25eb5324
+⌕ retrieval: BM25 over the clause corpus [retrieval] span_495b1411
+    retrieved              9 clause(s)
+    · HO3-I-EXCL-5     Intentional Loss
+    · HO3-I-D-1        Coverage D — Loss of Use
+    · HO3-I-PERILS-2   Coverage C — Named Perils
+    · HO3-I-PERILS-1   Coverage A and B — Open Perils
+    · HO3-I-EXCL-4     Neglect
+    finding                covered
+    · The loss is covered: a fire loss falls within the policy's grant of coverage [HO3-I-A-1].
+🛡 output_guardrail: citation_tripwire [guardrail] span_8776618e
+    § coverage conclusion grounded in ['HO3-I-A-1']
+◆ risk_agent.interpret [agent] span_4c32104b
+    band                   low (score 0)
+    · No fraud indicators are recorded against this claim. Nothing in the file suggests the loss is other than as described.
+◆ adjudicator.decide [agent] span_3b46f29f
+🛡 output_guardrail: determinism_override [guardrail] span_8d8855a2
+    ✓ model verdict consistent with the deterministic checks
+🛡 output_guardrail: pii_scan [guardrail] span_0efbcaf9
+    ✓ no personal data in the drafted output
+    OUTCOME                MORE_INFO
+    source                 deterministic_fallback
+    settlement             —
+    citations              —
+
+┌──────────────────────────────────────────────────────────────────────┐
+│ SCORECARD — claim 4409                                               │
+├──────────────────────────────────────────────────────────────────────┤
+│ [PASS] one of the four outcomes produced          MORE_INFO
+│ [PASS] all three client systems read              3/3 answered
+│ [PASS] every citation was actually retrieved      cited ['HO3-I-A-1']
+│ [PASS] poisoned documents quarantined             ids [16]
+│ [PASS] money-moving output is grounded            grounded
+│ [PASS] verdict source is explicit                 deterministic_fallback
+│ [PASS] settlement only on APPROVE                 —
+│ [PASS] human confirmation required                always
+├──────────────────────────────────────────────────────────────────────┤
+│ outcome: MORE_INFO   source: deterministic fallback   confidence: 0.70
+│ guardrails fired: quarantine_poisoned
+└──────────────────────────────────────────────────────────────────────┘
+brain=mock  3.7 ms  trace_id=3c94f89094d5
+    ! RECOMMENDATION ONLY — a licensed adjuster confirms every outcome

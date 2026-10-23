@@ -21,7 +21,7 @@ PY       := $(shell [ -x agent/.venv/bin/python ] && echo agent/.venv/bin/python
 export CLAIMSENSE_DB_URL      := $(DB_URL)
 export CLAIMSENSE_CONSOLE_URL := $(CONSOLE)
 
-.PHONY: help up seed keys web web-dev agent tripwire eval golden test verify venv doctor down clean
+.PHONY: help up seed keys web web-dev agent tripwire eval golden test verify venv show-sdk doctor down clean
 
 help: ## show this list
 	@grep -hE '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | \
@@ -56,6 +56,9 @@ tripwire: ## the BLOCKED case: force an uncited money claim and watch it fail cl
 
 eval: ## the 20-case gate CI runs on every PR
 	cd agent && PYTHONPATH=src ../$(PY) -m claimsense_agent eval --suite smoke --min-pass 0.9 --mock
+
+show-sdk: ## print the real OpenAI Agents SDK wiring
+	@cd agent && PYTHONPATH=src ../$(PY) -m claimsense_agent show-sdk
 
 golden: ## the full suite incl. adversarial — the release gate
 	cd agent && PYTHONPATH=src ../$(PY) -m claimsense_agent eval --suite golden --min-pass 0.95 --mock
