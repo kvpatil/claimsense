@@ -115,6 +115,24 @@ class RiskAssessment:
 
 
 @dataclass
+class Routing:
+    """Which desk must handle the claim, and the desks it has crossed.
+
+    Separate from the outcome on purpose. Routing answers WHO handles this;
+    the coverage stages answer WHAT the answer is. They are independent — a
+    claim can be a total loss (routes to appraisal) and excluded (denied
+    regardless), and collapsing the two would lose that.
+    """
+    desk: str
+    reason: str
+    chain: list[str] = field(default_factory=list)
+    escalated: bool = False
+    # Present when the damage could be measured against a value at all.
+    total_loss: bool = False
+    damage_ratio: float | None = None
+
+
+@dataclass
 class ClaimVerdict:
     """Stage 4 — the first decision. A recommendation, never an action."""
     claim_id: int
@@ -135,6 +153,9 @@ class ClaimVerdict:
     # write-back path has something to assert on, and so a future autonomous
     # mode has to change a value that someone can grep for.
     requires_human_confirmation: bool = True
+    # Which desk must handle this next. Computed deterministically; a model
+    # never chooses who works a claim.
+    routing: Routing | None = None
 
 
 @dataclass

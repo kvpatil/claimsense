@@ -26,7 +26,9 @@ from .pipeline import run_pipeline
 from .systems import ClaimsData
 from .trace import BOLD, DIM, GREEN, GREY, RED, RESET, YELLOW, Tracer
 
-# The smoke suite is the twenty planted scenarios — the M2 gate.
+# The smoke suite is the twenty planted scenarios — the M2 gate. The routing
+# cases (4421-4422) sit in the golden suite instead, so the milestone's "20
+# cases" stays literally twenty.
 SMOKE_RANGE = range(4401, 4421)
 
 
@@ -41,12 +43,23 @@ class CaseResult:
     cited: list[str]
     adversarial: str | None
     source: str
+    expected_desk: str | None = None
+    actual_desk: str | None = None
     guardrails: list[str] = field(default_factory=list)
     notes: list[str] = field(default_factory=list)
 
     @property
+    def routing_ok(self) -> bool:
+        """Only asserted where the scenario names a desk.
+
+        Most cases do not care who handles them; the two that do exist
+        precisely to exercise the escalation paths.
+        """
+        return self.expected_desk is None or self.actual_desk == self.expected_desk
+
+    @property
     def passed(self) -> bool:
-        return self.outcome_ok and self.grounding_ok
+        return self.outcome_ok and self.grounding_ok and self.routing_ok
 
 
 def _parse_claims(spec: str) -> list[int] | None:
@@ -92,7 +105,13 @@ def evaluate_case(data: ClaimsData, claim: dict) -> CaseResult:
             notes.append(f"cited {v.cited_clause_ids}, scenario expected "
                          f"{expected_clauses}")
 
+    expected_desk = claim.get("_routes_to")
+    actual_desk = v.routing.desk if v.routing else None
+    if expected_desk and actual_desk != expected_desk:
+        notes.append(f"routed to {actual_desk}, scenario expected {expected_desk}")
+
     return CaseResult(
+        expected_desk=expected_desk, actual_desk=actual_desk,
         claim_id=int(claim["claim_id"]), expected=expected, actual=v.outcome,
         outcome_ok=outcome_ok, grounding_ok=grounding_ok,
         expected_clauses=expected_clauses, cited=v.cited_clause_ids,
@@ -118,7 +137,7 @@ def run_suite(data: ClaimsData, *, suite: str = "smoke", min_pass: float = 0.9,
     print(f"{BOLD}eval suite: {suite}{RESET}  "
           f"{GREY}{len(rows)} cases · brain={brain} · min-pass={min_pass:.0%}{RESET}\n")
     header = (f"  {'claim':<7}{'expected':<14}{'actual':<14}{'source':<24}"
-              f"{'outcome':<9}{'grounded':<10}")
+              f"{'desk':<17}{'outcome':<9}{'grounded':<10}")
     print(header)
     print(f"  {GREY}{'─' * (len(header) - 2)}{RESET}")
 
@@ -128,8 +147,9 @@ def run_suite(data: ClaimsData, *, suite: str = "smoke", min_pass: float = 0.9,
         om = f"{GREEN}ok{RESET}   " if r.outcome_ok else f"{RED}MISS{RESET} "
         gm = f"{GREEN}ok{RESET}" if r.grounding_ok else f"{RED}NO{RESET}"
         tag = f" {YELLOW}{r.adversarial}{RESET}" if r.adversarial else ""
+        desk = (r.actual_desk or "—") + ("*" if r.expected_desk else "")
         print(f"  {r.claim_id:<7}{r.expected:<14}{r.actual:<14}{r.source:<24}"
-              f"{om:<9}{gm:<10}{tag}")
+              f"{desk:<17}{om:<9}{gm:<10}{tag}")
         for n in r.notes:
             print(f"    {GREY}· {n}{RESET}")
 
@@ -149,6 +169,13 @@ def run_suite(data: ClaimsData, *, suite: str = "smoke", min_pass: float = 0.9,
     print(f"  outcomes seen  {dict(produced)}")
     print(f"  adversarial    {len(adv) - len(adv_failed)}/{len(adv)} held")
     print(f"  guardrails     {dict(Counter(g for r in results for g in r.guardrails))}")
+    desks = Counter(r.actual_desk for r in results if r.actual_desk)
+    print(f"  desks          {dict(desks)}")
+    asserted = [r for r in results if r.expected_desk]
+    if asserted:
+        held = sum(1 for r in asserted if r.routing_ok)
+        print(f"  routing        {held}/{len(asserted)} asserted desks held"
+              f"   {GREY}(* above){RESET}")
 
     ok = True
     if rate < min_pass:

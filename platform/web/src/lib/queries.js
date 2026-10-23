@@ -17,15 +17,17 @@ export async function listClaims({ limit = 200, outcome = null } = {}) {
             c.reported_at, c.claimed_amount_cents::bigint, c.status,
             c.loss_state, c.policy_id,
             p.product, p.status AS policy_status,
-            a.full_name AS adjuster,
+            a.full_name AS adjuster, a.role AS adjuster_role,
             d.decision_id, d.outcome, d.source, d.confirmed_at,
-            d.override_outcome, d.settlement_cents::bigint
+            d.override_outcome, d.settlement_cents::bigint,
+            d.required_desk, d.routing_reason
        FROM cms.claims c
        LEFT JOIN pas.policies p ON p.policy_id = c.policy_id
        LEFT JOIN cms.adjusters a ON a.adjuster_id = c.assigned_adjuster_id
        LEFT JOIN LATERAL (
             SELECT decision_id, outcome, source, confirmed_at,
-                   override_outcome, settlement_cents
+                   override_outcome, settlement_cents, required_desk,
+                   routing_reason
               FROM cms.decisions WHERE claim_id = c.claim_id
              ORDER BY created_at DESC LIMIT 1
        ) d ON TRUE
@@ -45,7 +47,8 @@ export async function getClaimBundle(claimId) {
   const claim = await queryOne(
     `SELECT c.*, c.date_of_loss::text AS date_of_loss,
             c.claimed_amount_cents::bigint AS claimed_amount_cents,
-            a.full_name AS adjuster_name, a.license_number, a.role AS adjuster_role
+            a.full_name AS adjuster_name, a.license_number,
+            a.role AS adjuster_role, a.authority_limit_cents::bigint
        FROM cms.claims c
        LEFT JOIN cms.adjusters a ON a.adjuster_id = c.assigned_adjuster_id
       WHERE c.claim_id = $1`,
@@ -105,6 +108,28 @@ export async function getClauses(clauseIds) {
        FROM pas.policy_clauses WHERE clause_id = ANY($1)`,
     [clauseIds]
   );
+}
+
+/** The desks a claim crosses, with who sits at each.
+ *
+ * Shown in the Week 1 workbench so the handoff chain is visible: most of these
+ * seats cannot decide a claim at all, which is the point — a single file
+ * crosses several desks and only one of them adjudicates it.
+ */
+export async function getDesks() {
+  return query(`SELECT role, count(*)::int AS seats,
+                       -- adjudicating desks are the authority ladder, not
+                       -- 'holds a licence' — an appraiser holds one and
+                       -- decides nothing.
+                       (role IN ('adjuster','senior_adjuster','supervisor'))
+                         AS can_decide,
+                       max(authority_limit_cents)::bigint AS authority
+                  FROM cms.adjusters WHERE active AND adjuster_id <> 5
+                 GROUP BY role ORDER BY
+                   CASE role WHEN 'intake' THEN 1 WHEN 'adjuster' THEN 2
+                             WHEN 'senior_adjuster' THEN 3 WHEN 'supervisor' THEN 4
+                             WHEN 'appraiser' THEN 5 WHEN 'siu' THEN 6
+                             ELSE 7 END`);
 }
 
 export async function getAdjusters() {

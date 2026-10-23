@@ -1,6 +1,7 @@
 """Unit tests for the deterministic layer — the answers that must not vary."""
 from __future__ import annotations
 
+import pathlib
 from datetime import datetime, timezone
 
 import pytest
@@ -185,3 +186,59 @@ def test_fresh_claim_is_green():
 def test_naive_timestamp_is_treated_as_utc_not_rejected():
     ck = clock.compute("2026-09-29T10:00:00", now=NOW)
     assert ck.status == "GREEN"
+
+
+# ---- the adjudicating desks ---------------------------------------------
+
+def _seat(role, licence="TX-1"):
+    return {"adjuster_id": 99, "role": role, "scope": "standard",
+            "license_number": licence, "active": True}
+
+
+@pytest.mark.parametrize("role", ["adjuster", "senior_adjuster", "supervisor"])
+def test_every_desk_on_the_authority_ladder_may_confirm(role):
+    """Regression. can_confirm once hard-coded ("adjuster", "supervisor").
+
+    The moment a senior-adjuster seat existed it was refused — a seat holding
+    a $100,000 authority could not confirm a $900 claim. The ladder now has
+    one definition, in authority.py, and identity reads it.
+    """
+    assert identity.can_confirm(_seat(role), {"assigned_adjuster_id": None}).allowed
+
+
+@pytest.mark.parametrize("role", ["intake", "appraiser", "subrogation"])
+def test_non_adjudicating_desks_may_not_confirm(role):
+    """An appraiser holds a licence — an APPRAISER's licence.
+
+    Valuing a total loss is not adjudicating a claim, which is why the test
+    is on the ladder and not on whether license_number is null.
+    """
+    d = identity.can_confirm(_seat(role, licence="TX-APP-1"),
+                             {"assigned_adjuster_id": None})
+    assert d.allowed is False
+
+
+def test_the_ladder_has_one_definition():
+    """identity must not restate the ladder. That restatement was the bug.
+
+    Checked against CODE, not the file text. The first version of this test
+    grepped the raw source and failed on its own explanatory comment, which
+    quotes the old tuple — the same trap as a CI check that matches a word in
+    its own documentation. Comments are stripped before asserting.
+    """
+    import io
+    import tokenize
+
+    from claimsense_agent.determinism import authority
+
+    src = pathlib.Path(identity.__file__).read_text()
+    code = "".join(
+        tok.string if tok.type != tokenize.COMMENT else ""
+        for tok in tokenize.generate_tokens(io.StringIO(src).readline))
+
+    assert "AUTHORITY_LADDER" in code, "identity should read the shared ladder"
+    assert '"adjuster", "supervisor"' not in code, (
+        "identity restates the adjudicating desks — a senior adjuster was "
+        "refused the last time this happened")
+    assert authority.AUTHORITY_LADDER == ("adjuster", "senior_adjuster",
+                                          "supervisor")

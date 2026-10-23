@@ -22,18 +22,18 @@ hand-maintained fixture to forget to update.
 
 | Entity | System | Rows |
 |---|---|---|
-| Insureds | PAS | 60 |
-| Policies | PAS | 59 |
-| Coverages | PAS | 212 |
+| Insureds | PAS | 62 |
+| Policies | PAS | 61 |
+| Coverages | PAS | 218 |
 | Policy clauses | PAS | 46 |
-| Claims | CMS | 60 |
-| First notice of loss | CMS | 60 |
-| Adjuster notes | CMS | 31 |
-| Fraud signals | CMS | 26 |
-| Adjusters | CMS | 5 |
-| Documents | DMS | 92 |
+| Claims | CMS | 62 |
+| First notice of loss | CMS | 62 |
+| Adjuster notes | CMS | 25 |
+| Fraud signals | CMS | 28 |
+| Adjusters | CMS | 9 |
+| Documents | DMS | 99 |
 
-Of the 60 claims, **20 are planted scenarios** (4401-4420) carrying
+Of the 62 claims, **20 are planted scenarios** (4401-4420) carrying
 the outcome a correct pipeline must reach; the remaining 40 are filler so the
 queue reads like a working day rather than a test rig. Adding or removing
 filler cannot move a gate — the evaluation suite only ever names 4401-4420.
@@ -51,12 +51,13 @@ filler cannot move a gate — the evaluation suite only ever names 4401-4420.
 | `policy_id` | bigint | 7013 |
 | `insured_id` | bigint | 9014 |
 | `peril` | text | water |
-| `date_of_loss` | text | 2026-09-21 |
-| `reported_at` | text | 2026-09-22T17:00:00+00:00 |
+| `date_of_loss` | text | 2026-09-18 |
+| `reported_at` | text | 2026-09-19T13:00:00+00:00 |
 | `claimed_amount_cents` | bigint | 2375000 |
 | `status` | text | intake |
 | `assigned_adjuster_id` | bigint | 2 |
-| `loss_state` | text | AZ |
+| `loss_state` | text | CO |
+| `acv_cents` | bigint | 41659200 |
 
 `policy_id` and `insured_id` are **plain columns, not foreign keys.** PAS is
 another vendor's database and there is no referential integrity across the
@@ -76,11 +77,11 @@ floats make it a cent out occasionally and unpredictably.
 | `policy_number` | text | HO3-007013 |
 | `insured_id` | bigint | 9014 |
 | `product` | text | HO3 |
-| `effective_date` | text | 2026-01-11 |
-| `expiration_date` | text | 2027-01-11 |
+| `effective_date` | text | 2026-01-23 |
+| `expiration_date` | text | 2027-01-23 |
 | `status` | text | active |
 | `lapse_date` | nullable | None |
-| `premium_cents` | bigint | 159100 |
+| `premium_cents` | bigint | 339800 |
 | `payment_status` | text | current |
 
 `lapse_date` non-null means cover ceased **before the term ended**. A loss on
@@ -120,8 +121,8 @@ on a claim saying the roof "has been leaking".
 | `claim_id` | bigint | 4409 |
 | `doc_type` | text | estimate |
 | `filename` | text | 4409_estimate.pdf |
-| `uploaded_at` | text | 2026-09-30T16:00:00+00:00 |
-| `page_count` | bigint | 5 |
+| `uploaded_at` | text | 2026-09-12T08:00:00+00:00 |
+| `page_count` | bigint | 2 |
 | `is_poisoned` | boolean | True |
 | `extracted_text` | text | *(what OCR pulled out — the model reads this, never a file handle)* |
 

@@ -22,8 +22,8 @@ from .agents import coverage as coverage_agent
 from .agents import evidence as evidence_agent
 from .agents import risk as risk_agent
 from .agents import triage as triage_agent
-from .contracts import DecisionBasis, RunResult
-from .determinism import clock, eligibility, identity, money, risk
+from .contracts import DecisionBasis, Routing, RunResult
+from .determinism import authority, clock, eligibility, identity, money, risk
 from .guardrails import citation_tripwire, determinism_override, scan_for_pii
 from .retrieval import Retriever
 from .systems import ClaimsData, claim_bundle
@@ -106,8 +106,21 @@ def run_pipeline(data: ClaimsData, claim_id: int | str, *, tracer: Tracer,
 
         adjuster = bundle.get("adjuster")
         access = identity.can_view(adjuster, claim, siu_referred=scored.refer_to_siu)
-        t.kv("access", f"{adjuster['full_name']} — {access.reason}"
-                       if adjuster else "unassigned")
+        t.kv("access", f"{adjuster['full_name']} ({adjuster['role']}) — "
+                       f"{access.reason}" if adjuster else "unassigned")
+
+        # Is the item written off rather than repaired? Arithmetic against the
+        # actual cash value — and it changes which DESK handles the claim, not
+        # what the coverage answer is.
+        tl = authority.total_loss(claim["claimed_amount_cents"],
+                                  claim.get("acv_cents"),
+                                  claim.get("loss_state", ""))
+        if tl.applicable:
+            t.kv("total loss", (f"{RED}YES{RESET} — " if tl.is_total_loss else "no — ")
+                               + tl.reason)
+            basis.append(DecisionBasis(
+                kind="code", name="total-loss test", detail=tl.reason,
+                evidence=[f"acv={money.usd(claim.get('acv_cents'))}"]))
 
     # ---- 1. TRIAGE ---------------------------------------------------------
     with tracer.span("triage_agent.classify", kind="agent") as t:
@@ -247,11 +260,30 @@ def run_pipeline(data: ClaimsData, claim_id: int | str, *, tracer: Tracer,
             else:
                 g.event("no personal data in the drafted output", level="ok")
 
+        # ---- routing: WHO handles this, decided by numbers ----------------
+        with tracer.span("deterministic: settlement authority · routing",
+                         kind="code") as g:
+            r = authority.route(adjuster=adjuster, outcome=verdict.outcome,
+                                settlement_cents=verdict.settlement_cents,
+                                tl=tl, refer_to_siu=scored.refer_to_siu)
+            verdict.routing = Routing(
+                desk=r.desk, reason=r.reason, chain=r.chain,
+                escalated=r.escalated, total_loss=tl.is_total_loss,
+                damage_ratio=round(tl.ratio, 3) if tl.ratio is not None else None)
+            g.kv("desk", f"{BOLD}{r.desk}{RESET}"
+                         + (f"  {YELLOW}escalated{RESET}" if r.escalated else ""))
+            g.kv("path", " → ".join(r.chain))
+            g.event(r.reason)
+            basis.append(DecisionBasis(
+                kind="code", name="routing", detail=r.reason,
+                evidence=r.chain))
+
         src_col = GREEN if verdict.source == "model" else MAGENTA
         t.kv("OUTCOME", f"{BOLD}{verdict.outcome}{RESET}")
         t.kv("source", f"{src_col}{verdict.source}{RESET}")
         t.kv("settlement", money.usd(verdict.settlement_cents))
         t.kv("citations", verdict.cited_clause_ids or "—")
+        t.kv("desk", verdict.routing.desk if verdict.routing else "—")
 
     result = RunResult(
         claim_id=int(claim["claim_id"]), trace_id=tracer.trace_id, brain=brain,
@@ -284,6 +316,13 @@ def _build_checks(r: RunResult, elig, settlement) -> list[tuple[str, bool, str]]
          (v.settlement_cents is None) == (v.outcome != "APPROVE"),
          money.usd(v.settlement_cents)),
         ("human confirmation required", v.requires_human_confirmation, "always"),
+        ("routed to a named desk", bool(v.routing and v.routing.desk),
+         v.routing.desk if v.routing else "—"),
+        ("settlement within the desk's authority",
+         not (v.outcome == "APPROVE" and v.routing and v.routing.escalated
+              and v.routing.desk not in ("appraiser", "siu"))
+         or bool(v.routing and v.routing.escalated),
+         "escalated" if v.routing and v.routing.escalated else "in authority"),
     ]
 
 

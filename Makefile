@@ -90,10 +90,18 @@ setup: ## one-time: config files + the agent venv
 	@echo "      ./week1_demo.sh"
 	@echo ""
 
+# pytest for the suite, plus the LIVE extras. The mock path needs none of them
+# — that is the point of it — but a developer venv that cannot reach the live
+# systems silently SKIPS the backend-parity tests, and a skipped test looks
+# exactly like a passing one.
+#
+# Idempotent: uv venv refuses to overwrite, so create only when missing and
+# always (re)install. `make setup` calls this, and people re-run setup.
 venv: ## create the agent venv and install dev deps (needs uv)
-	cd agent && uv venv --python 3.11 .venv && \
-	  uv pip install --python .venv/bin/python --quiet "pytest>=8.0"
-	@echo "==> agent/.venv ready"
+	@cd agent && [ -x .venv/bin/python ] || uv venv --python 3.11 .venv
+	@cd agent && uv pip install --python .venv/bin/python --quiet \
+	    "pytest>=8.0" "requests>=2.31" "psycopg[binary]>=3.1"
+	@echo "==> agent/.venv ready (pytest + live extras)"
 
 doctor: ## check prerequisites and report what is missing
 	@echo "docker : $$(docker --version 2>/dev/null || echo MISSING)"

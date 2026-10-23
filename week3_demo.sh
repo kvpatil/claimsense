@@ -130,7 +130,24 @@ note "comparison produced is a different kind of output, and the schema,"
 note "the type and the console all keep them apart."
 pause
 
-step "7. The gate"
+step "7. Which desk handles it — decided by numbers"
+note "Week 1 showed seven desks and nothing working out which one a"
+note "claim needs. Three comparisons settle it, and none is a reading"
+note "of the file:"
+echo
+printf "  ${DIM}4421 — damage is 85%% of the vehicle's value:${RESET}\n"
+agent run --claim 4421 --mock 2>&1 | grep -E "total loss|desk |path |OUTCOME |settlement " | sed 's/^/    /'
+echo
+printf "  ${DIM}4422 — \$61,000, over an adjuster's \$25k authority:${RESET}\n"
+agent run --claim 4422 --mock 2>&1 | grep -E "desk |path |OUTCOME |settlement " | sed 's/^/    /'
+echo
+printf "  ${DIM}4418 — a total loss AND excluded:${RESET}\n"
+agent run --claim 4418 --mock 2>&1 | grep -E "total loss|desk |OUTCOME " | sed 's/^/    /'
+note "Routing and coverage are independent questions. There is nothing"
+note "to appraise on a claim the policy does not respond to."
+pause
+
+step "8. The gate"
 agent eval --suite smoke --min-pass 0.9 --mock 2>&1 | tail -9 | sed 's/^/  /'
 echo
 note "Twenty cases planted in the seed itself, so an eval case cannot"
@@ -138,7 +155,7 @@ note "drift from the data it is about. Three ways to fail: the rate, an"
 note "outcome never produced, or any adversarial regression."
 pause
 
-step "8. The gate has teeth"
+step "9. The gate has teeth"
 note "Regress three cases and check the exit code — which is the only"
 note "thing CI reads."
 cp agent/data/fixture.json /tmp/cs_fixture.bak
@@ -160,7 +177,7 @@ note "build-and-push declares needs: [test, eval, integration], so a red"
 note "gate means the push job is never scheduled. Not a conditional — a"
 note "dependency."
 
-step "9. Driving it without the portal at all"
+step "10. Driving it without the portal at all"
 note "The agent serves its own test client. Separate port, separate"
 note "process, no Next.js and no portal database involved — if this"
 note "works with Claims Desk down, the pipeline is independent of it."
@@ -176,6 +193,7 @@ pause
 step "Week 3 — what was delivered"
 printf "  ${BOLD}Agents SDK pipeline${RESET}     triage ➜ evidence ➜ coverage ➜ adjudicate\n"
 printf "  ${BOLD}search_policy_clauses${RESET}   the manual form search, as a tool\n"
+printf "  ${BOLD}Deterministic routing${RESET}   authority · total loss · referral\n"
 printf "  ${BOLD}Strict typed outputs${RESET}    one dataclass per stage\n"
 printf "  ${BOLD}Four guardrails${RESET}         quarantine · citation · override · PII\n"
 printf "  ${BOLD}Retrieval with citations${RESET} every clause id was actually retrieved\n"

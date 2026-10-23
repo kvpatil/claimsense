@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { Page, Crumb, Panel } from "@/components/Chrome";
 import { OutcomeBadge, SourceBadge, ConfirmBadge } from "@/components/Badges";
-import { getAdjusters, getClaimBundle, getClauses } from "@/lib/queries";
+import { getAdjusters, getClaimBundle, getClauses, getDesks } from "@/lib/queries";
 import { usd, shortDate, titleCase } from "@/lib/format";
 import { VENDOR } from "@/lib/client";
 import ConfirmPanel from "./ConfirmPanel";
@@ -16,9 +16,10 @@ export default async function Workbench({ params }) {
   const { claim, policy, insured, coverages, fnol, notes, signals,
           documents, decisions } = bundle;
   const latest = decisions[0] ?? null;
-  const [clauses, adjusters] = await Promise.all([
+  const [clauses, adjusters, desks] = await Promise.all([
     getClauses(latest?.cited_clause_ids ?? []),
     getAdjusters(),
+    getDesks(),
   ]);
 
   const quarantined = documents.filter((d) => d.is_poisoned);
@@ -194,8 +195,69 @@ export default async function Workbench({ params }) {
 
         {/* ---------- DECISION ---------------------------------------------- */}
         <div className="space-y-5">
+          <Panel title="Who handles this claim" tone="code"
+                 sub={latest?.required_desk
+                   ? "Decided by the numbers, not by a reading of the file."
+                   : "A claim crosses several desks. Only one of them decides it."}>
+            {latest?.required_desk ? (
+              <>
+                <div className="flex flex-wrap items-center gap-1.5 mb-2">
+                  {(latest.routing_chain ?? []).length === 0 && (
+                    <span className="chip border-accent text-accent font-semibold">
+                      {titleCase(latest.required_desk)}
+                    </span>
+                  )}
+                </div>
+                <p className="text-sm text-muted">{latest.routing_reason}</p>
+              </>
+            ) : (
+              <>
+                <ol className="space-y-1.5 text-sm">
+                  {desks.map((d) => (
+                    <li key={d.role} className="flex items-baseline gap-2">
+                      <span className={`h-1.5 w-1.5 rounded-full shrink-0 mt-1.5 ${
+                        d.can_decide ? "bg-up" : "bg-line"}`} />
+                      <span className="flex-1">
+                        <span className="font-medium">{titleCase(d.role)}</span>
+                        <span className="text-muted text-xs">
+                          {" · "}{d.seats} seat{d.seats === 1 ? "" : "s"}
+                          {d.can_decide
+                            ? d.authority
+                              ? ` · settles to ${usd(Number(d.authority))}`
+                              : " · settles without limit"
+                            : " · does not decide claims"}
+                        </span>
+                      </span>
+                    </li>
+                  ))}
+                </ol>
+                <p className="text-xs text-muted mt-3 pt-3 border-t border-line">
+                  Which of these a claim reaches depends on the amount, whether
+                  the item is a total loss, and the fraud score — and today an
+                  adjuster works that out and emails the next desk.
+                </p>
+              </>
+            )}
+          </Panel>
+
           <Panel title="Cover and money" tone="code"
                  sub="Dates and arithmetic. No model runs here.">
+            {claim.acv_cents ? (
+              <div className="mb-3 pb-3 border-b border-line">
+                <Row k="Actual cash value" v={usd(Number(claim.acv_cents))} />
+                <Row k="Damage as a share" tone={
+                       Number(claim.claimed_amount_cents) / Number(claim.acv_cents) >= 0.75
+                         ? "down" : null}
+                     v={`${Math.round(Number(claim.claimed_amount_cents) /
+                           Number(claim.acv_cents) * 100)}%`} />
+                {Number(claim.claimed_amount_cents) / Number(claim.acv_cents) >= 0.75 && (
+                  <p className="text-xs text-down mt-1">
+                    At or above the 75% total-loss threshold — valued by an
+                    appraiser rather than repaired.
+                  </p>
+                )}
+              </div>
+            ) : null}
             {coverages.length === 0 ? (
               <p className="text-sm text-muted">No coverages — the policy did not resolve.</p>
             ) : (

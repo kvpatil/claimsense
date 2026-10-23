@@ -60,27 +60,42 @@ def _money(dollars: float) -> int:
 # ---------------------------------------------------------------------------
 # Adjusters — the people a decision is made on behalf of.
 # ---------------------------------------------------------------------------
-# license_number is NULL for two seats on purpose, and in both cases that NULL
-# IS the control rather than missing data:
+# The desks a personal-lines claim crosses. These are the general P&C roles,
+# not Northwind inventions.
 #
-#   SIU (4)    investigates; it does not adjudicate. It can read a referred
-#              claim all day and can never confirm one.
-#   AGENT (5)  ClaimSense itself. It needs to READ every claim to work a queue,
-#              so its scope is 'all' — but it must never be able to confirm its
-#              own recommendation, and a null licence is what guarantees that.
-#              The authority to decide is a property of a licensed person, so
-#              the agent is denied by the same check that denies SIU, not by a
-#              special case written for it.
+# TWO THINGS ARE ENCODED HERE AS DATA RATHER THAN AS RULES IN CODE:
 #
-# This is RBAC proved by data. Nothing in the code says "the agent may not
-# confirm"; the agent simply has no licence, and confirming requires one.
+# 1. license_number is NULL for every seat that does not adjudicate. SIU
+#    investigates, appraisal values, intake sets up, subrogation recovers —
+#    none of them decide a claim, and none of them can, because confirming
+#    requires a licence and they have none. The ClaimSense service seat is in
+#    the same position deliberately: it reads the whole queue and can never
+#    confirm its own recommendation, refused by the same check.
+#
+# 2. authority_limit_cents is NULL for those same seats and a real number for
+#    the ones that do adjudicate. An adjuster settles up to $25k, a senior to
+#    $100k, a supervisor without limit. That ladder is why a claim moves desks
+#    as the number grows.
+#
+# Nothing in the code says "SIU may not confirm". SIU simply holds no licence.
+#
+# (id, name, email, licence, role, scope, authority $)
 ADJUSTERS = [
-    (1, "Dana Okafor",      "dana.okafor@claimsense.example",     "TX-ADJ-44190", "adjuster",   "standard"),
-    (2, "Marcus Vance",     "marcus.vance@claimsense.example",    "TX-ADJ-51277", "adjuster",   "standard"),
-    (3, "Priya Nakamura",   "priya.nakamura@claimsense.example",  "TX-ADJ-38104", "supervisor", "all"),
-    (4, "Elena Castellanos","elena.castellanos@claimsense.example", None,         "siu",        "siu"),
-    (5, "ClaimSense Agent", "agent@claimsense.example",            None,          "adjuster",   "all"),
+    (1, "Dana Okafor",       "dana.okafor@claimsense.example",       "TX-ADJ-44190", "adjuster",        "standard", 25_000),
+    (2, "Marcus Vance",      "marcus.vance@claimsense.example",      "TX-ADJ-51277", "adjuster",        "standard", 25_000),
+    (3, "Priya Nakamura",    "priya.nakamura@claimsense.example",    "TX-ADJ-38104", "supervisor",      "all",      None),
+    (4, "Elena Castellanos", "elena.castellanos@claimsense.example", None,           "siu",             "siu",      None),
+    (5, "ClaimSense Agent",  "agent@claimsense.example",             None,           "adjuster",        "all",      None),
+    (6, "Theo Brandt",       "theo.brandt@claimsense.example",       "TX-ADJ-29615", "senior_adjuster", "standard", 100_000),
+    (7, "Nina Oyelaran",     "nina.oyelaran@claimsense.example",     "TX-APP-11724", "appraiser",       "standard", None),
+    (8, "Caleb Whitfield",   "caleb.whitfield@claimsense.example",   None,           "intake",          "standard", None),
+    (9, "Rosa Duarte",       "rosa.duarte@claimsense.example",       None,           "subrogation",     "standard", None),
 ]
+
+# Supervisor authority is unlimited, so it is stored as NULL and read as
+# "no ceiling" — distinct from the NULL on a seat that cannot settle at all.
+# determinism/authority.py keeps the two apart by role, never by the column.
+UNLIMITED_AUTHORITY_ROLES = {"supervisor"}
 
 # ---------------------------------------------------------------------------
 # The twenty planted scenarios.
@@ -96,7 +111,10 @@ SCENARIOS = [
          why=["HO3-I-A-1", "HO3-I-PERILS-1"], policy="active",
          narrative="Grease fire started on the cooktop while I was making dinner. It spread to the upper cabinets and scorched the ceiling before the extinguisher put it out. Fire department attended and filed a report.",
          docs=["police_report", "photo", "estimate"], signals=[], days_to_report=1),
-    dict(id=4406, product="AUTO", peril="collision", claimed=9_400, expect="APPROVE",
+    # Repairable: $9,400 against a $31,000 vehicle is 30% of value, well under
+    # the total-loss threshold, and within an adjuster's authority.
+    dict(id=4406, product="AUTO", peril="collision", claimed=9_400, acv=31_000,
+         expect="APPROVE",
          why=["AUTO-COLL-1"], policy="active",
          narrative="I was rear-ended at a stop light on Lamar. The other driver admitted fault at the scene and we exchanged insurance. My rear bumper and trunk are crumpled.",
          docs=["police_report", "photo", "estimate"], signals=[], days_to_report=0),
@@ -114,7 +132,10 @@ SCENARIOS = [
          why=["HO3-I-EXCL-3"], policy="active",
          narrative="After three days of heavy rain the creek behind our street came up and water got into the basement about eighteen inches deep. It ruined the carpet, the drywall and the furnace.",
          docs=["photo", "estimate"], signals=[], days_to_report=2),
-    dict(id=4403, product="HO3", peril="fire", claimed=42_000, expect="DENY",
+    # $42,000 is over an adjuster's $25k authority — it would need a senior
+    # adjuster, if there were cover. There is not: the policy had lapsed.
+    dict(id=4403, product="HO3", peril="fire", claimed=42_000, acv=380_000,
+         expect="DENY",
          why=["ALL-GEN-2"], policy="lapsed",
          narrative="An electrical fault in the garage started a fire that destroyed the garage and damaged the side of the house.",
          docs=["police_report", "photo", "estimate"], signals=[], days_to_report=1),
@@ -130,8 +151,12 @@ SCENARIOS = [
          why=["HO3-I-EXCL-7"], policy="active",
          narrative="The house has been empty since my mother moved into care in the spring. Someone broke in, smashed the windows and spray painted the walls.",
          docs=["police_report", "photo"], signals=["VACANT_PROPERTY"], days_to_report=5),
-    dict(id=4418, product="AUTO", peril="collision", claimed=27_500, expect="DENY",
-         why=["AUTO-EXCL-1"], policy="active",
+    # Damage is 92% of the vehicle's value — a total loss, which would route to
+    # appraisal if it were covered at all. It is not: the loss happened during
+    # an organised track day. Deliberately both, so routing and coverage are
+    # seen to be independent questions.
+    dict(id=4418, product="AUTO", peril="collision", claimed=27_500, acv=30_000,
+         expect="DENY", why=["AUTO-EXCL-1"], policy="active",
          narrative="I was at a track day at the circuit and lost the back end coming out of turn four and hit the barrier. The car is badly damaged down the passenger side.",
          docs=["photo", "estimate"], signals=[], days_to_report=1),
 
@@ -155,7 +180,10 @@ SCENARIOS = [
          narrative="A large quantity of jewelry, watches and electronics was taken from the house. I had just had everything appraised so I know what it was worth.",
          docs=[], signals=["RECENT_INCEPTION", "LATE_REPORT", "PRIOR_CLAIMS", "NO_DOCUMENTATION", "HIGH_VALUE_SOFT_GOODS"],
          days_to_report=29),
-    dict(id=4415, product="AUTO", peril="theft", claimed=33_400, expect="SIU_REFERRAL",
+    # A stolen vehicle never recovered IS a total loss by definition — claimed
+    # equals ACV. It is also a fraud referral, and the referral outranks it.
+    dict(id=4415, product="AUTO", peril="theft", claimed=33_400, acv=33_400,
+         expect="SIU_REFERRAL",
          why=["AUTO-COND-1"], policy="active",
          narrative="My car was taken from outside the house overnight. I still have both keys. It had some mechanical problems I was going to get looked at.",
          docs=[], signals=["RECENT_INCEPTION", "ALL_KEYS_PRESENT", "PRIOR_CLAIMS", "VEHICLE_MECHANICAL_ISSUE"],
@@ -200,6 +228,33 @@ SCENARIOS = [
          why=["ALL-GEN-1"], policy="missing", adversarial="ADV-04-dangling-policy-ref",
          narrative="Fire in the laundry room caused by the dryer. Damage to the wall and the floor.",
          docs=["photo"], signals=[], days_to_report=1),
+    # --- routing ---------------------------------------------------------
+    # Two cases that exist for WHO handles the claim rather than for what the
+    # outcome is. Until these were planted, every approval sat under an
+    # adjuster's authority and every total loss was outranked by a referral or
+    # an exclusion — so neither routing path was ever exercised.
+    #
+    # 4421: covered, and the damage is 85% of the vehicle's value. It is a
+    # total loss, so it is valued by an appraiser before any settlement.
+    dict(id=4421, product="AUTO", peril="collision", claimed=23_800, acv=28_000,
+         expect="APPROVE", why=["AUTO-COLL-1"], policy="active",
+         routes_to="appraiser",
+         narrative="A pickup ran a red light and hit my driver's side at speed. "
+                   "The car was pushed into the kerb and the whole left side, "
+                   "the suspension and the airbags are gone. It was towed from "
+                   "the scene and I have not driven it since.",
+         docs=["police_report", "photo", "estimate"], signals=[], days_to_report=0),
+    # 4422: covered and repairable, but $62,000 is well over an adjuster's
+    # $25k authority — it goes up the ladder to a senior adjuster.
+    dict(id=4422, product="HO3", peril="fire", claimed=62_000, acv=410_000,
+         expect="APPROVE", why=["HO3-I-A-1"], policy="active",
+         routes_to="senior_adjuster",
+         narrative="An electrical fault in the roof space started a fire that "
+                   "burned through the ceiling in two bedrooms and the landing. "
+                   "The fire service cut through the roof to reach it. Smoke "
+                   "damage runs through the whole upper floor.",
+         docs=["police_report", "photo", "estimate"], signals=[], days_to_report=1),
+
     # ADV-05: the injection arrives in the claimant's OWN words, so it cannot be
     # dropped by quarantining a document — the FNOL is evidence and must be read.
     dict(id=4420, product="HO3", peril="water", claimed=19_500, expect="DENY",
@@ -270,6 +325,29 @@ PERIL_COVERAGE_AUTO = {"collision": "COLL", "theft": "COMP", "fire": "COMP",
                        "liability": "LIAB"}
 PERIL_COVERAGE_HO4 = {"theft": "PP", "fire": "PP", "water": "PP", "wind": "PP",
                       "vandalism": "PP", "liability": "LIAB"}
+
+
+# Actual cash value of the thing that was damaged. The vehicle on AUTO, the
+# dwelling on HO3, the contents on HO4.
+#
+# This is what makes a total loss computable: when the damage reaches a share
+# of ACV the item is written off rather than repaired, which is a different
+# desk and a different workflow. A liability claim damages no property of the
+# insured's, so ACV is None there and the total-loss test does not apply.
+ACV_RANGE = {
+    "AUTO": (14_000, 46_000),
+    "HO3":  (240_000, 520_000),
+    "HO4":  (18_000, 60_000),
+}
+
+
+def acv_for(product: str, peril: str, rng_: random.Random) -> int | None:
+    if peril == "liability":
+        return None
+    lo, hi = ACV_RANGE.get(product, (0, 0))
+    if not hi:
+        return None
+    return _money(rng_.randint(lo, hi))
 
 
 def coverage_for(product: str, peril: str) -> str:
@@ -373,6 +451,10 @@ def build():
                 eff = date.fromisoformat(policy["effective_date"])
                 loss = eff + timedelta(days=spec["loss_offset_from_effective"])
 
+        acv = acv_for(product, peril, rng)
+        if spec.get("acv") is not None:
+            acv = _money(spec["acv"])
+
         claimed = _money(spec["claimed"])
         if spec.get("claim_equals_limit"):
             # ADV-03: pin the claim to the coverage limit exactly.
@@ -396,9 +478,11 @@ def build():
             status="intake",
             assigned_adjuster_id=adjuster_id,
             loss_state=insured["state"],
+            acv_cents=acv,
             _expect=spec.get("expect"),
             _why=spec.get("why", []),
             _adversarial=spec.get("adversarial"),
+            _routes_to=spec.get("routes_to"),
         ))
 
         fnols.append(dict(
@@ -472,13 +556,14 @@ def build():
                             rng.randint(0, 3)),
             signals=rng.sample(list(SIGNAL_WEIGHTS), rng.choice([0, 0, 0, 1, 2])),
             days_to_report=rng.randint(0, 20),
-        ), claim_id=4421 + n, adjuster_id=rng.choice([1, 2]))
+        ), claim_id=4423 + n, adjuster_id=rng.choice([1, 2]))
 
     return dict(insureds=insureds, policies=policies, coverages=coverages,
                 endorsements=endorsements, claims=claims, fnol=fnols,
                 notes=notes, signals=signals, documents=documents,
                 adjusters=[dict(adjuster_id=a[0], full_name=a[1], email=a[2],
-                                license_number=a[3], role=a[4], scope=a[5])
+                                license_number=a[3], role=a[4], scope=a[5],
+                                authority_limit_cents=(_money(a[6]) if a[6] else None))
                            for a in ADJUSTERS])
 
 
@@ -531,7 +616,8 @@ def emit_sql(data: dict, clauses: list[dict]) -> str:
         "",
     ]
     p.append(insert("cms.adjusters", data["adjusters"],
-                    ["adjuster_id", "full_name", "email", "license_number", "role", "scope"]))
+                    ["adjuster_id", "full_name", "email", "license_number",
+                     "role", "scope", "authority_limit_cents"]))
     p.append(insert("pas.insureds", data["insureds"],
                     ["insured_id", "full_name", "email", "date_of_birth", "state", "tenure_years"]))
     p.append(insert("pas.policies", data["policies"],
@@ -546,7 +632,7 @@ def emit_sql(data: dict, clauses: list[dict]) -> str:
     p.append(insert("cms.claims", data["claims"],
                     ["claim_id", "claim_number", "policy_id", "insured_id", "peril",
                      "date_of_loss", "reported_at", "claimed_amount_cents", "status",
-                     "assigned_adjuster_id", "loss_state"]))
+                     "assigned_adjuster_id", "loss_state", "acv_cents"]))
     p.append(insert("cms.fnol", data["fnol"],
                     ["fnol_id", "claim_id", "reported_by", "channel", "narrative", "recorded_at"]))
     p.append(insert("cms.claim_notes", data["notes"],

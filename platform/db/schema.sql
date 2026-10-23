@@ -125,9 +125,31 @@ CREATE TABLE cms.adjusters (
     -- A decision is only valid if the person confirming it holds a licence.
     -- Checked in code on every write-back; never inferred by a model.
     license_number TEXT,
-    role           TEXT        NOT NULL,   -- adjuster | siu | supervisor
+    -- The desks a personal-lines claim actually crosses. These are the general
+    -- P&C patterns, not Northwind inventions:
+    --
+    --   intake           takes the first notice, sets the claim up, decides nothing
+    --   adjuster         adjudicates within an authority limit
+    --   senior_adjuster  adjudicates larger losses
+    --   supervisor       any amount, sees everything
+    --   appraiser        values a total loss; does NOT decide coverage
+    --   siu              investigates fraud referrals; does NOT adjudicate
+    --   subrogation      pursues recovery AFTER the decision
+    --
+    -- Most of these cannot decide a claim at all, which is the point: a single
+    -- claim crosses several desks and only one of them adjudicates it.
+    role           TEXT        NOT NULL,
     -- What this seat may see. 'all' for supervisors; SIU sees referred claims.
     scope          TEXT        NOT NULL DEFAULT 'standard',  -- standard | siu | all
+    -- SETTLEMENT AUTHORITY. The universal P&C control: an adjuster may settle
+    -- up to a limit and anything above it goes to a higher desk. NULL means no
+    -- settlement authority at all (intake, SIU, appraisal, subrogation);
+    -- 0 would be wrong and ambiguous, because it reads as "may settle nothing"
+    -- rather than "does not settle".
+    --
+    -- Deterministic by nature: it is a comparison against a number, and it
+    -- decides WHO handles the claim rather than WHAT the outcome is.
+    authority_limit_cents BIGINT,
     active         BOOLEAN     NOT NULL DEFAULT TRUE,
     created_at     TIMESTAMPTZ NOT NULL DEFAULT now()
 );
@@ -147,6 +169,15 @@ CREATE TABLE cms.claims (
     status              TEXT        NOT NULL DEFAULT 'intake',  -- intake | investigating | decided | closed
     assigned_adjuster_id BIGINT     REFERENCES cms.adjusters(adjuster_id),
     loss_state          TEXT        NOT NULL,
+    -- Actual cash value of the damaged property at the time of loss: the
+    -- vehicle for AUTO, the dwelling for HO3, the contents for HO4.
+    --
+    -- This is what makes a TOTAL LOSS computable. When the damage reaches a
+    -- threshold share of ACV the item is not repaired, it is written off and
+    -- valued by an appraiser — which is a different desk and a different
+    -- workflow, not a bigger version of the same one. Nullable because a
+    -- liability claim damages no property of the insured's.
+    acv_cents           BIGINT,
     created_at          TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 CREATE INDEX idx_claims_policy ON cms.claims(policy_id);
@@ -218,6 +249,15 @@ CREATE TABLE cms.decisions (
     -- in the schema: every override is a future eval case.
     override_outcome     TEXT,
     override_reason      TEXT,
+    -- Which desk must handle this claim, and why. Computed deterministically
+    -- from the settlement amount against the deciding seat's authority, the
+    -- damage-to-ACV ratio, and the fraud score — never chosen by a model.
+    --
+    -- Stored on the decision rather than the claim because routing is a
+    -- property of THIS recommendation: the same claim routes differently once
+    -- the number changes.
+    required_desk        TEXT,
+    routing_reason       TEXT,
     created_at           TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 CREATE INDEX idx_decisions_claim ON cms.decisions(claim_id);

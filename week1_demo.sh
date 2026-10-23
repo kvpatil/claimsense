@@ -125,7 +125,45 @@ echo
 note "Nothing records which clause the decision actually rested on."
 pause
 
-step "5. Where the time goes"
+step "5. A claim is not worked by one person"
+note "Northwind's claims operation is seven desks, and most of them"
+note "cannot decide a claim at all:"
+echo
+psql_ -F' | ' -c "
+  SELECT rpad(role, 16),
+         count(*) || ' seat(s)',
+         CASE WHEN role NOT IN ('adjuster','senior_adjuster','supervisor')
+                   THEN 'does not decide claims'
+              WHEN max(authority_limit_cents) IS NULL
+                   THEN 'settles without limit'
+              ELSE 'settles to $' || to_char(max(authority_limit_cents)/100,'FM999,999')
+         END
+    FROM cms.adjusters WHERE active AND adjuster_id <> 5
+   GROUP BY role
+   ORDER BY CASE role WHEN 'intake' THEN 1 WHEN 'adjuster' THEN 2
+                      WHEN 'senior_adjuster' THEN 3 WHEN 'supervisor' THEN 4
+                      WHEN 'appraiser' THEN 5 WHEN 'siu' THEN 6 ELSE 7 END;" \
+  | sed 's/^/    /'
+echo
+note "Which desk a claim reaches is decided by NUMBERS — the amount"
+note "against the adjuster's authority, the damage against the item's"
+note "value, the fraud score against the referral threshold."
+echo
+printf "  ${YELLOW}and today nobody computes those until a human does${RESET}\n"
+echo
+
+TL=$(psql_ -c "SELECT count(*) FROM cms.claims
+                WHERE acv_cents IS NOT NULL
+                  AND claimed_amount_cents::numeric / acv_cents >= 0.75;")
+OVER=$(psql_ -c "SELECT count(*) FROM cms.claims WHERE claimed_amount_cents > 2500000;")
+printf "  %-44s %s\n" "Claims that are total losses (>=75% of value)" "$TL"
+printf "  %-44s %s\n" "Claims over an adjuster's \$25,000 authority" "$OVER"
+note "Each of those is a handoff: re-read the file, re-establish the"
+note "facts, wait in another queue. The adjuster who opens it first"
+note "does that work before discovering they cannot finish it."
+pause
+
+step "6. Where the time goes"
 note "Open the claim in the portal and work it by hand:"
 echo
 printf "    ${BOLD}http://localhost:3200/claims/4414${RESET}\n"
@@ -140,6 +178,7 @@ note "Every one of those is accruing fair-claims exposure while it waits."
 
 step "Week 1 — what discovery found"
 printf "  ${BOLD}Three systems${RESET}  no adjuster sees a claim in one place\n"
+printf "  ${BOLD}Seven desks${RESET}  and nothing works out which one a claim needs\n"
 printf "  ${BOLD}No citation trail${RESET}  the clause relied on is never recorded\n"
 printf "  ${BOLD}Inconsistent${RESET}  the same facts reach different adjusters differently\n"
 printf "  ${BOLD}Unbounded${RESET}  the queue grows faster than it is worked\n"

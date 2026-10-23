@@ -140,7 +140,10 @@ th{font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--mu
               <option value="5">ClaimSense service seat — reads all, cannot confirm</option>
               <option value="1">Dana Okafor — adjuster, licensed</option>
               <option value="3">Priya Nakamura — supervisor, licensed</option>
-              <option value="4">Elena Castellanos — SIU, no licence</option>
+              <option value="6">Theo Brandt — senior adjuster, settles to $100k</option>
+            <option value="4">Elena Castellanos — SIU, no licence</option>
+            <option value="7">Nina Oyelaran — appraiser, values total losses</option>
+            <option value="8">Caleb Whitfield — intake, decides nothing</option>
             </select>
           </div>
         </div>
@@ -295,7 +298,19 @@ function render(d){
           <div class="val num">${(v.confidence*100).toFixed(0)}%</div></div>
         <div class="v"><div class="k">Net payable</div>
           <div class="val num">${usd(v.settlement_cents)}</div></div>
+        ${d.routing ? `<div class="v"><div class="k">Handled by</div>
+          <div class="val sm">${esc(d.routing.desk.replace(/_/g," "))}
+          ${d.routing.escalated ? '<span class="pill" style="color:var(--warn)">escalated</span>' : ""}
+          </div></div>` : ""}
       </div>
+
+      ${d.routing ? `<p class="note">
+        <strong>${esc(d.routing.chain.map(c=>c.replace(/_/g," ")).join(" → "))}</strong>
+        — ${esc(d.routing.reason)}
+        ${d.routing.damage_ratio !== null && d.routing.damage_ratio !== undefined
+          ? ` Damage is ${(d.routing.damage_ratio*100).toFixed(0)}% of actual cash value.` : ""}
+        Which desk handles a claim is decided by numbers, never by the model.
+      </p>` : ""}
 
       <p class="note">
         ${v.cited_clause_ids.length

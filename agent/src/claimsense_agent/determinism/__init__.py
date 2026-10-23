@@ -10,6 +10,6 @@ package may import the agents package, litellm, or the Agents SDK. If someone
 later reaches for a model to settle a date or a deductible, the build fails.
 """
 
-from . import clock, eligibility, identity, money, risk  # noqa: F401
+from . import authority, clock, eligibility, identity, money, risk  # noqa: F401
 
-__all__ = ["clock", "eligibility", "identity", "money", "risk"]
+__all__ = ["authority", "clock", "eligibility", "identity", "money", "risk"]

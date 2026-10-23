@@ -19,6 +19,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from .authority import AUTHORITY_LADDER
+
 SCOPE_ALL = "all"
 SCOPE_STANDARD = "standard"
 SCOPE_SIU = "siu"
@@ -73,8 +75,18 @@ def can_confirm(adjuster: dict | None, claim: dict, *,
             False,
             f"seat {adjuster['adjuster_id']} holds no adjuster licence; "
             "only a licensed adjuster may confirm a decision")
-    if adjuster.get("role") not in ("adjuster", "supervisor"):
+    # The adjudicating desks are exactly the authority ladder, and that list
+    # lives in authority.py rather than being restated here. It was restated
+    # here once, as ("adjuster", "supervisor"), and the moment a senior
+    # adjuster seat existed it was refused — a seat holding a $100,000
+    # authority could not confirm a $900 claim.
+    #
+    # An appraiser is the case that makes the distinction concrete: they hold
+    # a licence, it is an APPRAISER's licence, and valuing a total loss is not
+    # adjudicating a claim.
+    if adjuster.get("role") not in AUTHORITY_LADDER:
         return AccessDecision(
-            False, f"role '{adjuster.get('role')}' may not confirm decisions")
+            False, f"{adjuster.get('role', 'this')} is not an adjudicating "
+                   "desk — it may handle the claim but not decide it")
     return AccessDecision(True, f"licensed {adjuster['role']} "
                                 f"({adjuster['license_number']})")

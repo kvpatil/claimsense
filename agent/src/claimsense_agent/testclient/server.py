@@ -41,6 +41,8 @@ EXAMPLES = [
     (4412, "policy not in PAS", "ADV-04 — a dangling cross-system reference"),
     (4411, "claim equals the limit", "ADV-03 — the off-by-one-cent boundary"),
     (4405, "stacked fraud indicators", "referral by threshold, not by narrative"),
+    (4421, "total loss", "85% of the vehicle's value — routes to an appraiser"),
+    (4422, "over authority", "$61,000 exceeds an adjuster's $25k — routes up"),
 ]
 
 
@@ -118,6 +120,12 @@ def _result_payload(result, cfg, tracer) -> dict:
                      "tripwire_reason": c.tripwire_reason},
         "risk": {"score": r.score, "band": r.band, "indicators": r.indicators,
                  "interpretation": r.interpretation, "refer": r.refer_to_siu},
+        "routing": None if not v.routing else {
+            "desk": v.routing.desk, "reason": v.routing.reason,
+            "chain": v.routing.chain, "escalated": v.routing.escalated,
+            "total_loss": v.routing.total_loss,
+            "damage_ratio": v.routing.damage_ratio,
+        },
         "guardrails_fired": result.guardrails_fired,
         "checks": [{"name": n, "pass": ok, "note": note}
                    for n, ok, note in result.checks],
