@@ -18,9 +18,14 @@ import sys
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
-SYSTEMS = [("cms", 1, "agent — claims management"),
-           ("pas", 1, "agent — policy administration"),
-           ("dms", 1, "agent — document store")]
+# Adjuster 5 is the ClaimSense service seat: scope 'all' so it can read any
+# claim in the queue, licence NULL so it can never confirm its own
+# recommendation. The agent is refused by exactly the same check that refuses
+# the SIU analyst — there is no special case for it anywhere in the code.
+AGENT_SEAT = 5
+SYSTEMS = [("cms", AGENT_SEAT, "claimsense agent — claims management"),
+           ("pas", AGENT_SEAT, "claimsense agent — policy administration"),
+           ("dms", AGENT_SEAT, "claimsense agent — document store")]
 
 
 def psql(sql: str) -> str:
@@ -35,6 +40,47 @@ def psql(sql: str) -> str:
     return out.stdout.strip()
 
 
+KEYS_ENV = HERE.parent.parent / "keys.env"
+EXAMPLE = HERE.parent.parent / "keys.env.example"
+
+
+def write_keys_env(minted: list[tuple[str, str]]) -> bool:
+    """Put the minted keys straight into keys.env.
+
+    Printing them and asking for copy-paste is how a key ends up in a shell
+    history, a scrollback buffer or a screenshot. Writing the file is one less
+    place the plaintext exists.
+
+    Only the three CMS_/PAS_/DMS_ lines are touched; anything else already in
+    the file — an AWS key, an OpenAI key — is preserved exactly.
+    """
+    if not KEYS_ENV.exists():
+        if not EXAMPLE.exists():
+            return False
+        KEYS_ENV.write_text(EXAMPLE.read_text())
+
+    lines = KEYS_ENV.read_text().splitlines()
+    wanted = {f"{system.upper()}_API_KEY": key for system, key in minted}
+    seen = set()
+    out = []
+    for line in lines:
+        name = line.split("=", 1)[0].strip() if "=" in line else ""
+        if name in wanted:
+            out.append(f"{name}={wanted[name]}")
+            seen.add(name)
+        else:
+            out.append(line)
+    for name, value in wanted.items():
+        if name not in seen:
+            out.append(f"{name}={value}")
+
+    KEYS_ENV.write_text("\n".join(out) + "\n")
+    # 0600: the file holds live credentials and there is no reason for anything
+    # but this user to read it.
+    KEYS_ENV.chmod(0o600)
+    return True
+
+
 def main() -> None:
     minted = []
     for system, adjuster_id, label in SYSTEMS:
@@ -45,13 +91,22 @@ def main() -> None:
              f"VALUES ('{digest}', '{system}', {adjuster_id}, '{label}');")
         minted.append((system, key))
 
-    width = max(len(k) for _, k in minted)
+    wrote = write_keys_env(minted)
     print()
-    print("  Scoped API keys — printed ONCE, stored only as sha256.")
-    print("  Copy these into .env; they cannot be recovered afterwards.")
-    print()
-    for system, key in minted:
-        print(f"  {system.upper()}_API_KEY={key:<{width}}")
+    if wrote:
+        print(f"  Scoped API keys written to {KEYS_ENV.name} (mode 0600).")
+        print("  Stored in the database as sha256 only — this file is the one")
+        print("  copy of the plaintext, and it is gitignored.")
+        print()
+        for system, _ in minted:
+            print(f"    {system.upper()}_API_KEY  ✓ written")
+    else:
+        width = max(len(k) for _, k in minted)
+        print("  Scoped API keys — printed ONCE, stored only as sha256.")
+        print("  Copy these into keys.env; they cannot be recovered afterwards.")
+        print()
+        for system, key in minted:
+            print(f"    {system.upper()}_API_KEY={key:<{width}}")
     print()
 
 

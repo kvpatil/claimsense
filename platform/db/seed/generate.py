@@ -60,14 +60,26 @@ def _money(dollars: float) -> int:
 # ---------------------------------------------------------------------------
 # Adjusters — the people a decision is made on behalf of.
 # ---------------------------------------------------------------------------
-# license_number is NULL for the SIU analyst on purpose: SIU investigates, it
-# does not adjudicate. The write-back path checks for a licence, so this seat
-# physically cannot confirm a decision — RBAC proved by data, not by comment.
+# license_number is NULL for two seats on purpose, and in both cases that NULL
+# IS the control rather than missing data:
+#
+#   SIU (4)    investigates; it does not adjudicate. It can read a referred
+#              claim all day and can never confirm one.
+#   AGENT (5)  ClaimSense itself. It needs to READ every claim to work a queue,
+#              so its scope is 'all' — but it must never be able to confirm its
+#              own recommendation, and a null licence is what guarantees that.
+#              The authority to decide is a property of a licensed person, so
+#              the agent is denied by the same check that denies SIU, not by a
+#              special case written for it.
+#
+# This is RBAC proved by data. Nothing in the code says "the agent may not
+# confirm"; the agent simply has no licence, and confirming requires one.
 ADJUSTERS = [
     (1, "Dana Okafor",      "dana.okafor@claimsense.example",     "TX-ADJ-44190", "adjuster",   "standard"),
     (2, "Marcus Vance",     "marcus.vance@claimsense.example",    "TX-ADJ-51277", "adjuster",   "standard"),
     (3, "Priya Nakamura",   "priya.nakamura@claimsense.example",  "TX-ADJ-38104", "supervisor", "all"),
     (4, "Elena Castellanos","elena.castellanos@claimsense.example", None,         "siu",        "siu"),
+    (5, "ClaimSense Agent", "agent@claimsense.example",            None,          "adjuster",   "all"),
 ]
 
 # ---------------------------------------------------------------------------
@@ -529,7 +541,8 @@ def emit_sql(data: dict, clauses: list[dict]) -> str:
                     ["coverage_id", "policy_id", "coverage_code", "limit_cents",
                      "deductible_cents", "coinsurance_pct"]))
     p.append(insert("pas.policy_clauses", clauses,
-                    ["clause_id", "product", "section", "title", "clause_type", "body", "perils"]))
+                    ["clause_id", "product", "section", "title", "clause_type",
+                     "body", "perils", "keywords"]))
     p.append(insert("cms.claims", data["claims"],
                     ["claim_id", "claim_number", "policy_id", "insured_id", "peril",
                      "date_of_loss", "reported_at", "claimed_amount_cents", "status",

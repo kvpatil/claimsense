@@ -36,6 +36,14 @@
    "license_number": null,
    "role": "siu",
    "scope": "siu"
+  },
+  "5": {
+   "adjuster_id": 5,
+   "full_name": "ClaimSense Agent",
+   "email": "agent@claimsense.example",
+   "license_number": null,
+   "role": "adjuster",
+   "scope": "all"
   }
  },
  "insureds": {

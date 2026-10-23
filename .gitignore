@@ -1,6 +1,11 @@
 # --- secrets -----------------------------------------------------------------
-# Only the .example files ship. A ClaimSense key looks like `csk_…`; if one ever
+# keys.env holds every credential and must NEVER be committed. .env is wiring
+# only, but it is ignored too so a local override cannot travel by accident.
+# Only the .example files ship.
+#
+# A ClaimSense key looks like `csk_…`; an AWS one starts `AKIA`. If either ever
 # shows up in a diff, stop and strip it.
+keys.env
 .env
 .env.local
 *.env

@@ -102,7 +102,13 @@ CREATE TABLE pas.policy_clauses (
     body        TEXT NOT NULL,
     -- Perils this clause speaks to, for the deterministic pre-filter that runs
     -- before BM25. Empty means it applies regardless of peril.
-    perils      TEXT[] NOT NULL DEFAULT '{}'
+    perils      TEXT[] NOT NULL DEFAULT '{}',
+    -- The vocabulary CLAIMANTS use for what this clause governs. A policy form
+    -- is legal register and a first notice of loss is written by someone whose
+    -- house just flooded; they share almost no words, and BM25 scores on words.
+    -- Without this the wear-and-tear exclusion ranked LAST of 25 on a claim
+    -- that said the roof "has been leaking" and the ceiling was "sagging".
+    keywords    TEXT NOT NULL DEFAULT ''
 );
 CREATE INDEX idx_clauses_product ON pas.policy_clauses(product);
 CREATE INDEX idx_clauses_type ON pas.policy_clauses(clause_type);

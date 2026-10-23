@@ -18,7 +18,10 @@ export async function GET(req, { params }) {
   const product = url.searchParams.get("product");
 
   const clauses = await query(
-    `SELECT clause_id, product, section, title, clause_type, body, perils
+    // keywords MUST be returned. It is part of the retrieval index, and an
+    // endpoint that omits it silently degrades the live path relative to the
+    // offline one — which is exactly how mock and live drift apart.
+    `SELECT clause_id, product, section, title, clause_type, body, perils, keywords
        FROM pas.policy_clauses
       ${product ? "WHERE product = $1 OR product = 'ALL'" : ""}
       ORDER BY clause_id`,

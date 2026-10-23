@@ -31,20 +31,35 @@ FIXTURE = HERE.parent.parent / "data" / "fixture.json"
 CORPUS = HERE.parent.parent / "data" / "policy_corpus.json"
 
 
-def load_env(path: Path | None = None) -> None:
-    """Read .env without taking a dependency on python-dotenv.
+REPO_ROOT = HERE.parent.parent.parent
 
-    setdefault, not overwrite: a value already exported wins, so CI and the
-    container can override the file without editing it.
+
+def load_env(path: Path | None = None) -> None:
+    """Read .env and keys.env, without a python-dotenv dependency.
+
+    Two files, deliberately. `.env` is wiring — base URLs, the local DSN, model
+    ids — and is safe on a screenshare. `keys.env` is credentials and is
+    gitignored. Keeping them apart means `cat .env` in a demo cannot leak a
+    key, and the one file that must never be committed stays small enough to
+    check by eye.
+
+    setdefault, not overwrite: a value already exported wins over either file,
+    so CI and the container override without editing anything. Blank values are
+    skipped so an unfilled `OPENAI_API_KEY=` in keys.env does not shadow a real
+    one from the environment — which would silently force the mock brain.
     """
-    env = path or (HERE.parent.parent.parent / ".env")
-    if not env.exists():
-        return
-    for line in env.read_text().splitlines():
-        line = line.strip()
-        if line and not line.startswith("#") and "=" in line:
+    files = [path] if path else [REPO_ROOT / ".env", REPO_ROOT / "keys.env"]
+    for env in files:
+        if not env or not env.exists():
+            continue
+        for line in env.read_text().splitlines():
+            line = line.strip()
+            if not line or line.startswith("#") or "=" not in line:
+                continue
             k, v = line.split("=", 1)
-            os.environ.setdefault(k.strip(), v.strip())
+            v = v.strip()
+            if v:
+                os.environ.setdefault(k.strip(), v)
 
 
 class SystemError_(RuntimeError):

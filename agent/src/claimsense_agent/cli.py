@@ -2,12 +2,13 @@
 from __future__ import annotations
 
 import argparse
+import os
 import sys
 
 from . import brain as brain_mod
 from .pipeline import print_scorecard, run_pipeline
 from .systems import ClaimsData, SystemError_
-from .trace import DIM, GREY, RESET, Tracer, banner
+from .trace import DIM, GREY, RESET, Tracer, banner, okline
 
 
 def _add_common(p: argparse.ArgumentParser) -> None:
@@ -28,6 +29,9 @@ def main(argv: list[str] | None = None) -> int:
 
     run = sub.add_parser("run", help="work one claim end to end")
     run.add_argument("--claim", required=True)
+    run.add_argument("--write", action="store_true",
+                     help="land the recommendation in the claims system "
+                          "(requires --live and scoped keys)")
     run.add_argument("--tripwire", action="store_true",
                      help="force an uncited money-moving conclusion so the "
                           "output guardrail can be seen to block it")
@@ -52,6 +56,15 @@ def main(argv: list[str] | None = None) -> int:
         from .agents.sdk_runtime import SDK_REFERENCE
         print(SDK_REFERENCE)
         return 0
+
+    # Load .env + keys.env BEFORE detecting the brain. brain.detect() reads
+    # AWS_ACCESS_KEY_ID / OPENAI_API_KEY from the environment, and it runs
+    # before ClaimsData — so without this, credentials sitting in keys.env were
+    # invisible and --live silently fell back to the mock brain. A silent
+    # fallback is the worst kind: the run succeeds and the numbers are wrong
+    # about what produced them.
+    from .systems import load_env
+    load_env()
 
     cfg = brain_mod.detect(force_mock=args.mock or not args.live)
     try:
@@ -86,7 +99,15 @@ def main(argv: list[str] | None = None) -> int:
         except SystemError_ as exc:
             print(f"error: {exc}", file=sys.stderr)
             return 2
+        if args.write:
+            from .writeback import record_run, write_back
+            write_back(data, result, tracer=tracer)
+            record_run(data, result)
         print_scorecard(result, tracer)
+        if args.write and not data.mock:
+            console = os.environ.get("CLAIMSENSE_CONSOLE_URL",
+                                     "http://localhost:3200")
+            okline(f"see it in the product: {console}/claims/{result.claim_id}")
         # A blocked run is a SUCCESSFUL guardrail, not a failed run. Exit 0 —
         # failing here would make `make tripwire` look broken when it is the
         # control working exactly as designed.
