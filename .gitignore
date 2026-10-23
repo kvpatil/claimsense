@@ -34,3 +34,7 @@ npm-debug.log*
 
 # The agent venv. `make venv` recreates it; pytest is the only thing in it.
 agent/.venv/
+
+# Next build output and local env
+platform/web/.next/
+platform/web/.env.local

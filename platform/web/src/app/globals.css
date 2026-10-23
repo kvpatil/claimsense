@@ -1,0 +1,76 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ClaimSense palette — carried from Fintor, measured on these grounds.
+ *
+ * Declared as space-separated RGB channels rather than hex so Tailwind's
+ * `<alpha-value>` works: text-accent/60 has to be expressible, and a hex
+ * custom property cannot carry an alpha slot.
+ *
+ * Light and dark are ONE definition each. Every component styles through the
+ * tokens, so the dark block below is the whole of dark mode. Any token added
+ * to :root must be restated in the dark block — a token defined once survives
+ * into dark unchanged, which is how near-black text on a near-black card
+ * ships. */
+:root {
+  --ink:    26 24 32;      /* #1a1820 */
+  --muted:  88 84 97;      /* #585461 — 6.3:1 on paper */
+  --line:   217 214 224;   /* #d9d6e0 */
+  --paper:  253 253 253;   /* #fdfdfd — cards */
+  --ground: 247 246 249;   /* page, a shade off the cards so they read raised */
+  --note:   238 237 241;   /* #eeedf1 — inset panels */
+  --accent:  82 31 205;    /* #521fcd — 7.6:1 on paper */
+  --tint:   243 239 252;   /* #f3effc */
+  --up:     27 127 78;     /* #1b7f4e */
+  --down:  180  51  47;    /* #b4332f */
+  --warn:  154 106  27;    /* #9a6a1b */
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) { --ink: 231 230 235; --muted: 157 153 166;
+    --line: 53 50 60; --paper: 29 27 33; --ground: 19 18 23; --note: 34 31 40;
+    --accent: 155 122 235; --tint: 32 29 40; --up: 79 191 133;
+    --down: 232 120 111; --warn: 210 162 72; color-scheme: dark; }
+}
+/* The explicit override has to win in BOTH directions, so each theme is
+ * stated attribute-scoped as well as media-scoped. A toggle that only works
+ * one way is worse than no toggle. */
+:root[data-theme="dark"] { --ink: 231 230 235; --muted: 157 153 166;
+  --line: 53 50 60; --paper: 29 27 33; --ground: 19 18 23; --note: 34 31 40;
+  --accent: 155 122 235; --tint: 32 29 40; --up: 79 191 133;
+  --down: 232 120 111; --warn: 210 162 72; color-scheme: dark; }
+:root[data-theme="light"] { --ink: 26 24 32; --muted: 88 84 97;
+  --line: 217 214 224; --paper: 253 253 253; --ground: 247 246 249;
+  --note: 238 237 241; --accent: 82 31 205; --tint: 243 239 252;
+  --up: 27 127 78; --down: 180 51 47; --warn: 154 106 27; color-scheme: light; }
+
+@layer base {
+  body {
+    @apply bg-ground text-ink font-sans antialiased;
+    font-feature-settings: "kern" 1;
+  }
+  h1, h2, h3 { @apply font-serif; letter-spacing: -0.012em; font-weight: 650; }
+
+  /* Tabular numerals on every figure. Claim amounts, limits and deductibles
+   * that shift horizontally as values update read as sloppy, and proportional
+   * digits are the single most common tell that a dashboard was not built by
+   * someone who looks at numbers for a living. Fintor paid for this lesson;
+   * one rule carries it over. */
+  .num, td, th, code, pre, time {
+    font-variant-numeric: tabular-nums lining-nums;
+    font-feature-settings: "tnum" 1, "lnum" 1;
+  }
+}
+
+@layer components {
+  .card { @apply bg-paper border border-line rounded-card; }
+  .chip {
+    @apply inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full border
+           border-line text-xs text-muted bg-paper whitespace-nowrap;
+  }
+  /* Wide content scrolls inside its own box. The page body must never scroll
+   * horizontally — a claims table is the first thing that would make it. */
+  .scroll-x { @apply overflow-x-auto; }
+}

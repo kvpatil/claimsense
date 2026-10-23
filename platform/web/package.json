@@ -1,0 +1,25 @@
+{
+  "name": "claimsense-console",
+  "version": "0.1.0",
+  "private": true,
+  "description": "ClaimSense adjuster console + the three client-system APIs",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "contracts": "node scripts/emit-openapi.mjs"
+  },
+  "dependencies": {
+    "next": "14.2.35",
+    "pg": "^8.12.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "zod": "^3.23.8",
+    "zod-to-json-schema": "^3.23.2"
+  },
+  "devDependencies": {
+    "autoprefixer": "^10.4.19",
+    "postcss": "^8.4.39",
+    "tailwindcss": "^3.4.6"
+  }
+}

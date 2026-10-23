@@ -1,0 +1,440 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "ClaimSense ⇄ Document Store",
+    "version": "1.0.0",
+    "description": "Documents and the text OCR pulled out of them.\n\nPoisoned documents are returned FLAGGED, not filtered. If this API dropped them the agent could never record that it refused one, and a quarantine nobody can see is a quarantine nobody can audit.\n\nEvery write accepts an Idempotency-Key header and every write REQUIRES one.\n\n  * Scope: the key is unique per (adjuster, system). Two seats may reuse a key\n    string without colliding.\n  * Replay: a repeat with the same key and the same body returns the ORIGINAL\n    record, HTTP 200, with Idempotent-Replay: true. Nothing new is created.\n  * Conflict: the same key with a DIFFERENT body is HTTP 409. That is a client\n    bug, and returning the first response would silently discard the second\n    intent.\n  * Retention: keys are kept 7 days, which is longer than any retry window a\n    caller should have.\n\nThis is a correctness requirement, not a nicety. A duplicated claim decision\nis a duplicated payment."
+  },
+  "servers": [
+    {
+      "url": "http://localhost:3200/api/dms/v1"
+    }
+  ],
+  "components": {
+    "schemas": {
+      "ApiError": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "object",
+            "properties": {
+              "code": {
+                "type": "string"
+              },
+              "message": {
+                "type": "string"
+              },
+              "hint": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "code",
+              "message"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "error"
+        ],
+        "additionalProperties": false
+      },
+      "CreateDocumentRequest": {
+        "type": "object",
+        "properties": {
+          "claim_id": {
+            "type": "integer"
+          },
+          "doc_type": {
+            "type": "string",
+            "enum": [
+              "police_report",
+              "photo",
+              "estimate",
+              "invoice",
+              "proof_of_loss",
+              "receipt"
+            ]
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 10,
+            "maxLength": 500
+          }
+        },
+        "required": [
+          "claim_id",
+          "doc_type",
+          "reason"
+        ],
+        "additionalProperties": false
+      },
+      "CreateDocumentRequestResponse": {
+        "type": "object",
+        "properties": {
+          "request": {
+            "type": "object",
+            "properties": {
+              "request_id": {
+                "type": "integer"
+              },
+              "claim_id": {
+                "type": "integer"
+              },
+              "doc_type": {
+                "type": "string",
+                "enum": [
+                  "police_report",
+                  "photo",
+                  "estimate",
+                  "invoice",
+                  "proof_of_loss",
+                  "receipt"
+                ]
+              },
+              "reason": {
+                "type": "string"
+              },
+              "requested_by": {
+                "type": "integer"
+              },
+              "requested_at": {
+                "type": "string",
+                "format": "date-time",
+                "description": "RFC3339 timestamp with offset"
+              },
+              "fulfilled_at": {
+                "anyOf": [
+                  {
+                    "$ref": "#/definitions/CreateDocumentRequestResponse/properties/request/properties/requested_at"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "description": "RFC3339 timestamp with offset"
+              }
+            },
+            "required": [
+              "request_id",
+              "claim_id",
+              "doc_type",
+              "reason",
+              "requested_by",
+              "requested_at",
+              "fulfilled_at"
+            ],
+            "additionalProperties": false
+          },
+          "idempotent_replay": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "request"
+        ],
+        "additionalProperties": false
+      },
+      "Document": {
+        "type": "object",
+        "properties": {
+          "document_id": {
+            "type": "integer"
+          },
+          "claim_id": {
+            "type": "integer"
+          },
+          "doc_type": {
+            "type": "string",
+            "enum": [
+              "police_report",
+              "photo",
+              "estimate",
+              "invoice",
+              "proof_of_loss",
+              "receipt"
+            ]
+          },
+          "filename": {
+            "type": "string"
+          },
+          "uploaded_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "RFC3339 timestamp with offset"
+          },
+          "page_count": {
+            "type": "integer",
+            "exclusiveMinimum": 0
+          },
+          "extracted_text": {
+            "type": "string"
+          },
+          "is_poisoned": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "document_id",
+          "claim_id",
+          "doc_type",
+          "filename",
+          "uploaded_at",
+          "page_count",
+          "extracted_text",
+          "is_poisoned"
+        ],
+        "additionalProperties": false
+      },
+      "DocumentRequest": {
+        "type": "object",
+        "properties": {
+          "request_id": {
+            "type": "integer"
+          },
+          "claim_id": {
+            "type": "integer"
+          },
+          "doc_type": {
+            "type": "string",
+            "enum": [
+              "police_report",
+              "photo",
+              "estimate",
+              "invoice",
+              "proof_of_loss",
+              "receipt"
+            ]
+          },
+          "reason": {
+            "type": "string"
+          },
+          "requested_by": {
+            "type": "integer"
+          },
+          "requested_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "RFC3339 timestamp with offset"
+          },
+          "fulfilled_at": {
+            "anyOf": [
+              {
+                "$ref": "#/definitions/DocumentRequest/properties/requested_at"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "RFC3339 timestamp with offset"
+          }
+        },
+        "required": [
+          "request_id",
+          "claim_id",
+          "doc_type",
+          "reason",
+          "requested_by",
+          "requested_at",
+          "fulfilled_at"
+        ],
+        "additionalProperties": false
+      },
+      "ListDocumentsResponse": {
+        "type": "object",
+        "properties": {
+          "claim_id": {
+            "type": "integer"
+          },
+          "documents": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "document_id": {
+                  "type": "integer"
+                },
+                "claim_id": {
+                  "type": "integer"
+                },
+                "doc_type": {
+                  "type": "string",
+                  "enum": [
+                    "police_report",
+                    "photo",
+                    "estimate",
+                    "invoice",
+                    "proof_of_loss",
+                    "receipt"
+                  ]
+                },
+                "filename": {
+                  "type": "string"
+                },
+                "uploaded_at": {
+                  "type": "string",
+                  "format": "date-time",
+                  "description": "RFC3339 timestamp with offset"
+                },
+                "page_count": {
+                  "type": "integer",
+                  "exclusiveMinimum": 0
+                },
+                "extracted_text": {
+                  "type": "string"
+                },
+                "is_poisoned": {
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "document_id",
+                "claim_id",
+                "doc_type",
+                "filename",
+                "uploaded_at",
+                "page_count",
+                "extracted_text",
+                "is_poisoned"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "count": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "claim_id",
+          "documents",
+          "count"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "Scoped to the DMS contract. A key for another system is refused with 403 wrong_system."
+      }
+    }
+  },
+  "paths": {
+    "/documents": {
+      "get": {
+        "summary": "Documents for a claim, including any flagged poisoned.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "401": {
+            "description": "No or unrecognised key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Key is valid but scoped to another system, or the seat may not access this resource",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Body failed contract validation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/document-requests": {
+      "post": {
+        "summary": "WRITE — ask the claimant for a missing document. Idempotency-Key required: a retry must not send two letters.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "201": {
+            "description": "Created"
+          },
+          "401": {
+            "description": "No or unrecognised key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Key is valid but scoped to another system, or the seat may not access this resource",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Idempotency-Key reused with a different body",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Body failed contract validation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Unique per (adjuster, system). A replay returns the original record; reuse with a different body is 409."
+          }
+        ]
+      }
+    }
+  }
+}
