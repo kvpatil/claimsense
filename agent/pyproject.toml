@@ -1,0 +1,34 @@
+[project]
+name = "claimsense-agent"
+version = "0.1.0"
+description = "ClaimSense — claims adjudication co-pilot (OpenAI Agents SDK)"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+
+# The pipeline runs end to end in --mock mode on NOTHING but the stdlib.
+# That is not minimalism for its own sake: --mock is the CI brain and the gate
+# every milestone is measured on, so it must never be able to fail because a
+# wheel did not build. Everything below is optional and only imported on a path
+# that actually needs it.
+dependencies = []
+
+[project.optional-dependencies]
+# Live Postgres / HTTP path against the three client systems.
+live = ["requests>=2.31"]
+# Real agents. Imported only when a key is present AND --mock was not passed.
+llm = ["openai-agents>=0.2", "litellm>=1.50", "boto3>=1.34"]
+dev = ["pytest>=8.0"]
+
+[project.scripts]
+claimsense-agent = "claimsense_agent.cli:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/claimsense_agent"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]

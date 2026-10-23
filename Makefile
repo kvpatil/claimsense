@@ -9,10 +9,15 @@ DB_URL   ?= postgresql://claimsense:claimsense@localhost:5433/claimsense
 CONSOLE  ?= http://localhost:$(PORT)
 COMPOSE  := docker compose -f platform/db/docker-compose.yml
 
+# Prefer the agent's venv when it exists, fall back to system python otherwise.
+# The $0 gate runs on the stdlib, so a missing venv must not stop `make eval` —
+# only `make test` genuinely needs pytest installed.
+PY       := $(shell [ -x agent/.venv/bin/python ] && echo agent/.venv/bin/python || echo python3)
+
 export CLAIMSENSE_DB_URL      := $(DB_URL)
 export CLAIMSENSE_CONSOLE_URL := $(CONSOLE)
 
-.PHONY: help up seed keys web web-dev agent tripwire eval golden test verify doctor down clean
+.PHONY: help up seed keys web web-dev agent tripwire eval golden test verify venv doctor down clean
 
 help: ## show this list
 	@grep -hE '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | \
@@ -40,19 +45,19 @@ web-dev: ## hot-reload the console instead
 	cd platform/web && npm install --silent && PORT=$(PORT) npm run dev
 
 agent: ## work claim $(CLAIM) end to end (mock brain — no key, no network)
-	cd agent && PYTHONPATH=src python3 -m claimsense_agent run --claim $(CLAIM) --mock
+	cd agent && PYTHONPATH=src ../$(PY) -m claimsense_agent run --claim $(CLAIM) --mock
 
 tripwire: ## the BLOCKED case: force an uncited money claim and watch it fail closed
-	cd agent && PYTHONPATH=src python3 -m claimsense_agent run --claim $(CLAIM) --mock --tripwire
+	cd agent && PYTHONPATH=src ../$(PY) -m claimsense_agent run --claim $(CLAIM) --mock --tripwire
 
 eval: ## the 20-case gate CI runs on every PR
-	cd agent && PYTHONPATH=src python3 -m claimsense_agent eval --suite smoke --min-pass 0.9 --mock
+	cd agent && PYTHONPATH=src ../$(PY) -m claimsense_agent eval --suite smoke --min-pass 0.9 --mock
 
 golden: ## the full suite incl. adversarial — the release gate
-	cd agent && PYTHONPATH=src python3 -m claimsense_agent eval --suite golden --min-pass 0.95 --mock
+	cd agent && PYTHONPATH=src ../$(PY) -m claimsense_agent eval --suite golden --min-pass 0.95 --mock
 
 test: ## the agent's pytest suite
-	cd agent && PYTHONPATH=src python3 -m pytest -q
+	cd agent && PYTHONPATH=src ../$(PY) -m pytest -q
 
 verify: ## the $$0 gate: prerequisites + eval + unit tests. Run this first.
 	@$(MAKE) --no-print-directory doctor
@@ -62,8 +67,14 @@ verify: ## the $$0 gate: prerequisites + eval + unit tests. Run this first.
 	@$(MAKE) --no-print-directory test
 	@echo "verify: OK"
 
+venv: ## create the agent venv and install dev deps (needs uv)
+	cd agent && uv venv --python 3.11 .venv && \
+	  uv pip install --python .venv/bin/python --quiet "pytest>=8.0"
+	@echo "==> agent/.venv ready"
+
 doctor: ## check prerequisites and report what is missing
 	@echo "docker : $$(docker --version 2>/dev/null || echo MISSING)"
+	@echo "agent  : $(PY)"
 	@echo "node   : $$(node -v 2>/dev/null || echo MISSING)"
 	@echo "python : $$(python3 -V 2>/dev/null || echo MISSING)"
 	@echo "db     : $$($(COMPOSE) exec -T claimsense-db pg_isready -U claimsense 2>/dev/null || echo 'not running — make up')"

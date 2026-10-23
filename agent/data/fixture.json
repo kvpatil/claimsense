@@ -3204,9 +3204,9 @@
    "status": "intake",
    "assigned_adjuster_id": 1,
    "loss_state": "FL",
-   "_expect": "APPROVE",
+   "_expect": "MORE_INFO",
    "_why": [
-    "HO3-I-A-1"
+    "HO3-I-COND-1"
    ],
    "_adversarial": "ADV-01-poisoned-document"
   },
@@ -6165,7 +6165,8 @@
    "title": "Coverage A \u2014 Dwelling",
    "clause_type": "grant",
    "perils": [],
-   "body": "We cover the dwelling on the residence premises shown in the Declarations, including structures attached to the dwelling, and materials and supplies located on or next to the residence premises used to construct, alter or repair the dwelling. We do not cover land, including land on which the dwelling is located."
+   "body": "We cover the dwelling on the residence premises shown in the Declarations, including structures attached to the dwelling, and materials and supplies located on or next to the residence premises used to construct, alter or repair the dwelling. We do not cover land, including land on which the dwelling is located.",
+   "keywords": "fire smoke burned burnt scorched charred house home structure building walls ceiling roof kitchen garage"
   },
   {
    "clause_id": "HO3-I-B-1",
@@ -6174,7 +6175,8 @@
    "title": "Coverage B \u2014 Other Structures",
    "clause_type": "grant",
    "perils": [],
-   "body": "We cover other structures on the residence premises set apart from the dwelling by clear space. The limit of liability for this coverage is 10% of the Coverage A limit and is an additional amount of insurance."
+   "body": "We cover other structures on the residence premises set apart from the dwelling by clear space. The limit of liability for this coverage is 10% of the Coverage A limit and is an additional amount of insurance.",
+   "keywords": "shed garage fence detached outbuilding workshop carport"
   },
   {
    "clause_id": "HO3-I-C-1",
@@ -6183,7 +6185,8 @@
    "title": "Coverage C \u2014 Personal Property",
    "clause_type": "grant",
    "perils": [],
-   "body": "We cover personal property owned or used by an insured while it is anywhere in the world. Our limit of liability for personal property usually situated at an insured's residence, other than the residence premises, is 10% of the Coverage C limit, or $1,000, whichever is greater."
+   "body": "We cover personal property owned or used by an insured while it is anywhere in the world. Our limit of liability for personal property usually situated at an insured's residence, other than the residence premises, is 10% of the Coverage C limit, or $1,000, whichever is greater.",
+   "keywords": "belongings contents possessions furniture electronics jewelry jewellery clothes laptop television stolen taken"
   },
   {
    "clause_id": "HO3-I-C-2",
@@ -6194,7 +6197,8 @@
    "perils": [
     "theft"
    ],
-   "body": "Special limits apply to the following and do not increase the Coverage C limit. $200 on money, bank notes, bullion, coins and medals. $1,500 on securities, accounts, deeds and manuscripts. $1,500 on watercraft including trailers and equipment. $2,500 on theft of firearms and related equipment. $2,500 on theft of jewelry, watches, furs and precious stones. $2,500 on property used primarily for business purposes."
+   "body": "Special limits apply to the following and do not increase the Coverage C limit. $200 on money, bank notes, bullion, coins and medals. $1,500 on securities, accounts, deeds and manuscripts. $1,500 on watercraft including trailers and equipment. $2,500 on theft of firearms and related equipment. $2,500 on theft of jewelry, watches, furs and precious stones. $2,500 on property used primarily for business purposes.",
+   "keywords": "jewelry jewellery watches firearms guns cash money coins securities limit capped"
   },
   {
    "clause_id": "HO3-I-D-1",
@@ -6203,7 +6207,8 @@
    "title": "Coverage D \u2014 Loss of Use",
    "clause_type": "grant",
    "perils": [],
-   "body": "If a loss covered under Section I makes that part of the residence premises where an insured resides not fit to live in, we cover the additional living expense, meaning any necessary increase in living expenses incurred so that the household can maintain its normal standard of living. Payment is for the shortest time required to repair or replace the damage, not to exceed 12 months."
+   "body": "If a loss covered under Section I makes that part of the residence premises where an insured resides not fit to live in, we cover the additional living expense, meaning any necessary increase in living expenses incurred so that the household can maintain its normal standard of living. Payment is for the shortest time required to repair or replace the damage, not to exceed 12 months.",
+   "keywords": "hotel temporary accommodation living elsewhere cannot live uninhabitable displaced"
   },
   {
    "clause_id": "HO3-I-PERILS-1",
@@ -6218,7 +6223,8 @@
     "theft",
     "vandalism"
    ],
-   "body": "We insure against risk of direct physical loss to property described in Coverages A and B. We do not insure, however, for loss excluded under Section I \u2014 Exclusions, or caused by the specific causes listed in this section."
+   "body": "We insure against risk of direct physical loss to property described in Coverages A and B. We do not insure, however, for loss excluded under Section I \u2014 Exclusions, or caused by the specific causes listed in this section.",
+   "keywords": "fire smoke wind hail storm explosion vehicle impact falling tree"
   },
   {
    "clause_id": "HO3-I-PERILS-2",
@@ -6233,7 +6239,8 @@
     "water",
     "vandalism"
    ],
-   "body": "We insure for direct physical loss to the property described in Coverage C caused by: fire or lightning; windstorm or hail; explosion; riot or civil commotion; aircraft; vehicles; smoke; vandalism or malicious mischief; theft; falling objects; weight of ice, snow or sleet; accidental discharge or overflow of water or steam; sudden and accidental tearing apart of a heating or air conditioning system; freezing; and sudden and accidental damage from artificially generated electrical current."
+   "body": "We insure for direct physical loss to the property described in Coverage C caused by: fire or lightning; windstorm or hail; explosion; riot or civil commotion; aircraft; vehicles; smoke; vandalism or malicious mischief; theft; falling objects; weight of ice, snow or sleet; accidental discharge or overflow of water or steam; sudden and accidental tearing apart of a heating or air conditioning system; freezing; and sudden and accidental damage from artificially generated electrical current.",
+   "keywords": "fire smoke theft stolen wind hail vandalism freezing burst discharge overflow"
   },
   {
    "clause_id": "HO3-I-EXCL-1",
@@ -6242,7 +6249,8 @@
    "title": "Ordinance or Law",
    "clause_type": "exclusion",
    "perils": [],
-   "body": "We do not insure for loss caused directly or indirectly by the enforcement of any ordinance or law regulating the construction, repair or demolition of a building or other structure, unless specifically provided under this policy."
+   "body": "We do not insure for loss caused directly or indirectly by the enforcement of any ordinance or law regulating the construction, repair or demolition of a building or other structure, unless specifically provided under this policy.",
+   "keywords": "building code upgrade permit ordinance bring up to code inspector required"
   },
   {
    "clause_id": "HO3-I-EXCL-2",
@@ -6253,7 +6261,8 @@
    "perils": [
     "earthquake"
    ],
-   "body": "We do not insure for loss caused directly or indirectly by earth movement, meaning earthquake including land shock waves, landslide, mudslide, mudflow, subsidence, sinkhole, or earth sinking, rising or shifting. This exclusion does not apply to direct loss by fire or explosion resulting from earth movement."
+   "body": "We do not insure for loss caused directly or indirectly by earth movement, meaning earthquake including land shock waves, landslide, mudslide, mudflow, subsidence, sinkhole, or earth sinking, rising or shifting. This exclusion does not apply to direct loss by fire or explosion resulting from earth movement.",
+   "keywords": "earthquake tremor shook shaking crack cracked foundation sank sinking shifted subsidence landslide"
   },
   {
    "clause_id": "HO3-I-EXCL-3",
@@ -6265,7 +6274,8 @@
     "water",
     "flood"
    ],
-   "body": "We do not insure for loss caused directly or indirectly by water damage, meaning: flood, surface water, waves, tidal water, overflow of a body of water, or spray from any of these, whether or not driven by wind; water which backs up through sewers or drains or which overflows from a sump; or water below the surface of the ground, including water which exerts pressure on or seeps through a building, sidewalk, driveway, foundation, swimming pool or other structure."
+   "body": "We do not insure for loss caused directly or indirectly by water damage, meaning: flood, surface water, waves, tidal water, overflow of a body of water, or spray from any of these, whether or not driven by wind; water which backs up through sewers or drains or which overflows from a sump; or water below the surface of the ground, including water which exerts pressure on or seeps through a building, sidewalk, driveway, foundation, swimming pool or other structure.",
+   "keywords": "flood flooding creek river stream rain rainwater storm water surface water rose came up basement groundwater sewer backup drain overflowed"
   },
   {
    "clause_id": "HO3-I-EXCL-3b",
@@ -6276,7 +6286,8 @@
    "perils": [
     "water"
    ],
-   "body": "The water damage exclusion does not apply to sudden and accidental discharge or overflow of water or steam from within a plumbing, heating, air conditioning or automatic fire protective sprinkler system, or from within a household appliance. We do not cover loss to the system or appliance from which the water escaped, nor loss caused by continuous or repeated seepage or leakage over a period of weeks, months or years."
+   "body": "The water damage exclusion does not apply to sudden and accidental discharge or overflow of water or steam from within a plumbing, heating, air conditioning or automatic fire protective sprinkler system, or from within a household appliance. We do not cover loss to the system or appliance from which the water escaped, nor loss caused by continuous or repeated seepage or leakage over a period of weeks, months or years.",
+   "keywords": "burst pipe pipes plumbing supply line hose washing machine dishwasher water heater appliance sudden leak ceiling came through upstairs"
   },
   {
    "clause_id": "HO3-I-EXCL-4",
@@ -6285,7 +6296,8 @@
    "title": "Neglect",
    "clause_type": "exclusion",
    "perils": [],
-   "body": "We do not insure for loss caused by neglect, meaning the insured's failure to use all reasonable means to save and preserve property at and after the time of a loss."
+   "body": "We do not insure for loss caused by neglect, meaning the insured's failure to use all reasonable means to save and preserve property at and after the time of a loss.",
+   "keywords": "failed to protect left open neglected did nothing tarp board up"
   },
   {
    "clause_id": "HO3-I-EXCL-5",
@@ -6298,7 +6310,8 @@
     "vandalism",
     "theft"
    ],
-   "body": "We do not insure for loss arising out of any act an insured commits or conspires to commit with the intent to cause a loss. In the event of such loss, no insured is entitled to coverage, even insureds who did not commit or conspire to commit the act causing the loss."
+   "body": "We do not insure for loss arising out of any act an insured commits or conspires to commit with the intent to cause a loss. In the event of such loss, no insured is entitled to coverage, even insureds who did not commit or conspire to commit the act causing the loss.",
+   "keywords": "deliberate deliberately on purpose intentional arson set fire staged"
   },
   {
    "clause_id": "HO3-I-EXCL-6",
@@ -6307,7 +6320,8 @@
    "title": "Wear and Tear, Deterioration",
    "clause_type": "exclusion",
    "perils": [],
-   "body": "We do not insure for loss caused by wear and tear, marring, deterioration, mechanical breakdown, latent defect, inherent vice, rust, mold, wet or dry rot, smog, settling, shrinking, bulging or expansion of pavements, foundations, walls, floors, roofs or ceilings, or birds, vermin, rodents or insects."
+   "body": "We do not insure for loss caused by wear and tear, marring, deterioration, mechanical breakdown, latent defect, inherent vice, rust, mold, wet or dry rot, smog, settling, shrinking, bulging or expansion of pavements, foundations, walls, floors, roofs or ceilings, or birds, vermin, rodents or insects.",
+   "keywords": "leak leaking leaked slow gradual gradually over time for a while long standing years months shingles aged old worn worn out end of life sagging sagged discoloured discolored black mould mould rot rotting rusted deteriorated deteriorating wear tear maintenance"
   },
   {
    "clause_id": "HO3-I-EXCL-7",
@@ -6320,7 +6334,8 @@
     "theft",
     "water"
    ],
-   "body": "We do not insure for loss by vandalism or malicious mischief, theft, or water damage from freezing if the dwelling has been vacant for more than 60 consecutive days immediately before the loss. A dwelling being constructed is not considered vacant."
+   "body": "We do not insure for loss by vandalism or malicious mischief, theft, or water damage from freezing if the dwelling has been vacant for more than 60 consecutive days immediately before the loss. A dwelling being constructed is not considered vacant.",
+   "keywords": "empty unoccupied nobody living vacant moved out care home abandoned standing empty"
   },
   {
    "clause_id": "HO3-I-EXCL-8",
@@ -6329,7 +6344,8 @@
    "title": "Business Property and Activities",
    "clause_type": "exclusion",
    "perils": [],
-   "body": "We do not insure for loss arising out of or in connection with a business conducted from the residence premises, except as specifically provided. Business property on the residence premises is subject to the special limit stated in Coverage C."
+   "body": "We do not insure for loss arising out of or in connection with a business conducted from the residence premises, except as specifically provided. Business property on the residence premises is subject to the special limit stated in Coverage C.",
+   "keywords": "business work office clients customers home business commercial"
   },
   {
    "clause_id": "HO3-I-COND-1",
@@ -6338,7 +6354,8 @@
    "title": "Your Duties After Loss",
    "clause_type": "condition",
    "perils": [],
-   "body": "In case of a loss to covered property, you must give prompt notice to us or our agent; protect the property from further damage and make reasonable and necessary repairs to protect it; cooperate with us in the investigation of the claim; and, within 60 days after our request, submit to us a signed, sworn proof of loss."
+   "body": "In case of a loss to covered property, you must give prompt notice to us or our agent; protect the property from further damage and make reasonable and necessary repairs to protect it; cooperate with us in the investigation of the claim; and, within 60 days after our request, submit to us a signed, sworn proof of loss.",
+   "keywords": "report notify tell us police report proof of loss paperwork documents cooperate inspection"
   },
   {
    "clause_id": "HO3-I-COND-2",
@@ -6347,7 +6364,8 @@
    "title": "Deductible",
    "clause_type": "condition",
    "perils": [],
-   "body": "Unless otherwise noted in this policy, the following deductible provision applies: with respect to any one loss, we will pay only that part of the total of all loss payable that exceeds the deductible amount shown in the Declarations."
+   "body": "Unless otherwise noted in this policy, the following deductible provision applies: with respect to any one loss, we will pay only that part of the total of all loss payable that exceeds the deductible amount shown in the Declarations.",
+   "keywords": "deductible excess out of pocket first part"
   },
   {
    "clause_id": "HO3-I-COND-3",
@@ -6356,7 +6374,8 @@
    "title": "Loss Settlement",
    "clause_type": "condition",
    "perils": [],
-   "body": "Covered property losses are settled as follows. Personal property and structures that are not buildings at actual cash value at the time of loss, not exceeding the amount necessary to repair or replace. Buildings under Coverage A or B at replacement cost without deduction for depreciation, provided the building is insured for at least 80% of its full replacement cost at the time of loss."
+   "body": "Covered property losses are settled as follows. Personal property and structures that are not buildings at actual cash value at the time of loss, not exceeding the amount necessary to repair or replace. Buildings under Coverage A or B at replacement cost without deduction for depreciation, provided the building is insured for at least 80% of its full replacement cost at the time of loss.",
+   "keywords": "replacement cost actual cash value depreciation payout settle how much"
   },
   {
    "clause_id": "HO3-I-COND-4",
@@ -6365,7 +6384,8 @@
    "title": "Concealment or Fraud",
    "clause_type": "condition",
    "perils": [],
-   "body": "We provide coverage to no insured who, whether before or after a loss, has intentionally concealed or misrepresented any material fact or circumstance, engaged in fraudulent conduct, or made false statements relating to this insurance."
+   "body": "We provide coverage to no insured who, whether before or after a loss, has intentionally concealed or misrepresented any material fact or circumstance, engaged in fraudulent conduct, or made false statements relating to this insurance.",
+   "keywords": "lied lying false statement exaggerated misrepresented concealed fraud dishonest"
   },
   {
    "clause_id": "HO3-I-COND-5",
@@ -6374,7 +6394,8 @@
    "title": "Suit Against Us",
    "clause_type": "condition",
    "perils": [],
-   "body": "No action can be brought against us unless there has been full compliance with all of the terms under Section I of this policy and the action is started within two years after the date of loss."
+   "body": "No action can be brought against us unless there has been full compliance with all of the terms under Section I of this policy and the action is started within two years after the date of loss.",
+   "keywords": "sue lawsuit legal action time limit deadline"
   },
   {
    "clause_id": "HO3-II-E-1",
@@ -6385,7 +6406,8 @@
    "perils": [
     "liability"
    ],
-   "body": "If a claim is made or a suit is brought against an insured for damages because of bodily injury or property damage caused by an occurrence to which this coverage applies, we will pay up to our limit of liability for the damages for which an insured is legally liable, and provide a defense at our expense by counsel of our choice."
+   "body": "If a claim is made or a suit is brought against an insured for damages because of bodily injury or property damage caused by an occurrence to which this coverage applies, we will pay up to our limit of liability for the damages for which an insured is legally liable, and provide a defense at our expense by counsel of our choice.",
+   "keywords": "guest visitor injured hurt slipped fell liability sued lawyer claim against us"
   },
   {
    "clause_id": "HO3-II-F-1",
@@ -6396,7 +6418,8 @@
    "perils": [
     "liability"
    ],
-   "body": "We will pay the necessary medical expenses incurred or medically ascertained within three years from the date of an accident causing bodily injury. This coverage does not apply to you or regular residents of your household other than residence employees."
+   "body": "We will pay the necessary medical expenses incurred or medically ascertained within three years from the date of an accident causing bodily injury. This coverage does not apply to you or regular residents of your household other than residence employees.",
+   "keywords": "medical bills hospital ambulance treatment injured guest"
   },
   {
    "clause_id": "HO3-II-EXCL-1",
@@ -6408,7 +6431,8 @@
     "liability",
     "collision"
    ],
-   "body": "Coverage E and Coverage F do not apply to bodily injury or property damage arising out of the ownership, maintenance, occupancy, operation, use, loading or unloading of motor vehicles. Motor vehicle liability is addressed under a separate automobile policy."
+   "body": "Coverage E and Coverage F do not apply to bodily injury or property damage arising out of the ownership, maintenance, occupancy, operation, use, loading or unloading of motor vehicles. Motor vehicle liability is addressed under a separate automobile policy.",
+   "keywords": "car vehicle driving auto motor accident road"
   },
   {
    "clause_id": "HO3-DEF-1",
@@ -6417,7 +6441,8 @@
    "title": "Occurrence",
    "clause_type": "definition",
    "perils": [],
-   "body": "Occurrence means an accident, including continuous or repeated exposure to substantially the same general harmful conditions, which results during the policy period in bodily injury or property damage."
+   "body": "Occurrence means an accident, including continuous or repeated exposure to substantially the same general harmful conditions, which results during the policy period in bodily injury or property damage.",
+   "keywords": "occurrence accident incident event"
   },
   {
    "clause_id": "HO3-DEF-2",
@@ -6426,7 +6451,8 @@
    "title": "Residence Premises",
    "clause_type": "definition",
    "perils": [],
-   "body": "Residence premises means the one-family dwelling where you reside, the two-, three- or four-family dwelling where you reside in at least one of the family units, or that part of any other building where you reside, and which is shown as the residence premises in the Declarations."
+   "body": "Residence premises means the one-family dwelling where you reside, the two-, three- or four-family dwelling where you reside in at least one of the family units, or that part of any other building where you reside, and which is shown as the residence premises in the Declarations.",
+   "keywords": "home address residence where i live property"
   },
   {
    "clause_id": "HO3-DEF-3",
@@ -6435,7 +6461,8 @@
    "title": "Actual Cash Value",
    "clause_type": "definition",
    "perils": [],
-   "body": "Actual cash value means the cost to repair or replace the damaged property with property of like kind and quality, less an allowance for physical depreciation based on the age and condition of the property at the time of loss."
+   "body": "Actual cash value means the cost to repair or replace the damaged property with property of like kind and quality, less an allowance for physical depreciation based on the age and condition of the property at the time of loss.",
+   "keywords": "depreciation value worth age condition used"
   },
   {
    "clause_id": "HO4-I-C-1",
@@ -6449,7 +6476,8 @@
     "water",
     "wind"
    ],
-   "body": "We cover personal property owned or used by an insured while it is anywhere in the world, against the named perils listed in this form. This policy provides no coverage for the dwelling structure itself, which remains the responsibility of the property owner."
+   "body": "We cover personal property owned or used by an insured while it is anywhere in the world, against the named perils listed in this form. This policy provides no coverage for the dwelling structure itself, which remains the responsibility of the property owner.",
+   "keywords": "renters tenant belongings contents possessions apartment flat stolen taken furniture electronics"
   },
   {
    "clause_id": "HO4-I-D-1",
@@ -6458,7 +6486,8 @@
    "title": "Coverage D \u2014 Loss of Use (Renters)",
    "clause_type": "grant",
    "perils": [],
-   "body": "If a covered loss makes the described premises not fit to live in, we cover the necessary increase in living expenses incurred so the household can maintain its normal standard of living, for the shortest time required to repair or replace the premises, not to exceed 12 months."
+   "body": "If a covered loss makes the described premises not fit to live in, we cover the necessary increase in living expenses incurred so the household can maintain its normal standard of living, for the shortest time required to repair or replace the premises, not to exceed 12 months.",
+   "keywords": "hotel temporary accommodation cannot live displaced renters"
   },
   {
    "clause_id": "HO4-I-EXCL-1",
@@ -6471,7 +6500,8 @@
     "water",
     "wind"
    ],
-   "body": "We do not insure for loss to the building structure, fixtures, or permanently installed systems of the described premises. Coverage under this form is limited to the personal property of the insured and to loss of use."
+   "body": "We do not insure for loss to the building structure, fixtures, or permanently installed systems of the described premises. Coverage under this form is limited to the personal property of the insured and to loss of use.",
+   "keywords": "building structure landlord walls fixtures not my building"
   },
   {
    "clause_id": "AUTO-COLL-1",
@@ -6482,7 +6512,8 @@
    "perils": [
     "collision"
    ],
-   "body": "We will pay for direct and accidental loss to your covered auto caused by collision, meaning the upset of your covered auto or its impact with another vehicle or object, less the applicable deductible shown in the Declarations for that vehicle."
+   "body": "We will pay for direct and accidental loss to your covered auto caused by collision, meaning the upset of your covered auto or its impact with another vehicle or object, less the applicable deductible shown in the Declarations for that vehicle.",
+   "keywords": "crash collision hit rear ended accident bumper collided impact barrier"
   },
   {
    "clause_id": "AUTO-COMP-1",
@@ -6497,7 +6528,8 @@
     "vandalism",
     "water"
    ],
-   "body": "We will pay for direct and accidental loss to your covered auto not caused by collision, including loss caused by missiles or falling objects, fire, theft or larceny, explosion, earthquake, windstorm, hail, water, flood, malicious mischief or vandalism, riot, and contact with a bird or animal, less the applicable deductible."
+   "body": "We will pay for direct and accidental loss to your covered auto not caused by collision, including loss caused by missiles or falling objects, fire, theft or larceny, explosion, earthquake, windstorm, hail, water, flood, malicious mischief or vandalism, riot, and contact with a bird or animal, less the applicable deductible.",
+   "keywords": "stolen theft vandalism fire hail flood glass windscreen windshield animal deer tree branch"
   },
   {
    "clause_id": "AUTO-LIAB-1",
@@ -6509,7 +6541,8 @@
     "liability",
     "collision"
    ],
-   "body": "We will pay damages for bodily injury or property damage for which any insured becomes legally responsible because of an auto accident, and will settle or defend any claim or suit asking for these damages, up to the limit of liability shown in the Declarations."
+   "body": "We will pay damages for bodily injury or property damage for which any insured becomes legally responsible because of an auto accident, and will settle or defend any claim or suit asking for these damages, up to the limit of liability shown in the Declarations.",
+   "keywords": "injured other driver damage their car sued liability third party"
   },
   {
    "clause_id": "AUTO-EXCL-1",
@@ -6520,7 +6553,8 @@
    "perils": [
     "collision"
    ],
-   "body": "We do not provide coverage for any insured for loss occurring while your covered auto is being used in, or in practice or preparation for, any prearranged or organized racing, speed or demolition contest or stunting activity."
+   "body": "We do not provide coverage for any insured for loss occurring while your covered auto is being used in, or in practice or preparation for, any prearranged or organized racing, speed or demolition contest or stunting activity.",
+   "keywords": "racing race track day circuit speed contest stunt drifting lap autocross"
   },
   {
    "clause_id": "AUTO-EXCL-2",
@@ -6532,7 +6566,8 @@
     "collision",
     "liability"
    ],
-   "body": "We do not provide coverage for any insured while employed or otherwise engaged in the business of selling, repairing, servicing, storing or parking vehicles, nor while the covered auto is being used to carry persons or property for a fee. This exclusion does not apply to a share-the-expense car pool."
+   "body": "We do not provide coverage for any insured while employed or otherwise engaged in the business of selling, repairing, servicing, storing or parking vehicles, nor while the covered auto is being used to carry persons or property for a fee. This exclusion does not apply to a share-the-expense car pool.",
+   "keywords": "uber lyft rideshare delivery taxi for hire business use courier"
   },
   {
    "clause_id": "AUTO-EXCL-3",
@@ -6545,7 +6580,8 @@
     "vandalism",
     "fire"
    ],
-   "body": "We do not provide coverage for any insured who intentionally causes bodily injury or property damage, nor for loss to your covered auto resulting from an insured's intentional act."
+   "body": "We do not provide coverage for any insured who intentionally causes bodily injury or property damage, nor for loss to your covered auto resulting from an insured's intentional act.",
+   "keywords": "deliberate deliberately on purpose intentional vandalised own car"
   },
   {
    "clause_id": "AUTO-EXCL-4",
@@ -6554,7 +6590,8 @@
    "title": "Wear, Freezing, Mechanical Breakdown",
    "clause_type": "exclusion",
    "perils": [],
-   "body": "We do not provide coverage for loss to your covered auto due and confined to wear and tear, freezing, mechanical or electrical breakdown or failure, or road damage to tires, unless that loss results from the total theft of your covered auto."
+   "body": "We do not provide coverage for loss to your covered auto due and confined to wear and tear, freezing, mechanical or electrical breakdown or failure, or road damage to tires, unless that loss results from the total theft of your covered auto.",
+   "keywords": "breakdown engine failure mechanical electrical tyres tires worn freezing"
   },
   {
    "clause_id": "AUTO-COND-1",
@@ -6563,7 +6600,8 @@
    "clause_type": "condition",
    "title": "Duties After an Accident or Loss",
    "perils": [],
-   "body": "We have no duty to provide coverage under this policy unless there has been full compliance with the following duties: prompt notice of how, when and where the accident or loss happened; cooperation in the investigation, settlement or defense of any claim; prompt notification to the police if the covered auto is stolen; and permitting us to inspect and appraise the damaged property before its repair or disposal."
+   "body": "We have no duty to provide coverage under this policy unless there has been full compliance with the following duties: prompt notice of how, when and where the accident or loss happened; cooperation in the investigation, settlement or defense of any claim; prompt notification to the police if the covered auto is stolen; and permitting us to inspect and appraise the damaged property before its repair or disposal.",
+   "keywords": "report police notify stolen cooperate inspect appraise"
   },
   {
    "clause_id": "AUTO-COND-2",
@@ -6575,7 +6613,8 @@
     "collision",
     "theft"
    ],
-   "body": "Our limit of liability for loss will be the lesser of the actual cash value of the stolen or damaged property, or the amount necessary to repair or replace the property with other property of like kind and quality. An adjustment for depreciation and physical condition will be made in determining actual cash value at the time of loss."
+   "body": "Our limit of liability for loss will be the lesser of the actual cash value of the stolen or damaged property, or the amount necessary to repair or replace the property with other property of like kind and quality. An adjustment for depreciation and physical condition will be made in determining actual cash value at the time of loss.",
+   "keywords": "value worth payout depreciation actual cash value how much"
   },
   {
    "clause_id": "AUTO-DEF-1",
@@ -6584,7 +6623,8 @@
    "title": "Your Covered Auto",
    "clause_type": "definition",
    "perils": [],
-   "body": "Your covered auto means any vehicle shown in the Declarations, a newly acquired auto, any trailer you own, and any auto or trailer you do not own while used as a temporary substitute for a vehicle shown in the Declarations that is out of normal use because of breakdown, repair, servicing, loss or destruction."
+   "body": "Your covered auto means any vehicle shown in the Declarations, a newly acquired auto, any trailer you own, and any auto or trailer you do not own while used as a temporary substitute for a vehicle shown in the Declarations that is out of normal use because of breakdown, repair, servicing, loss or destruction.",
+   "keywords": "my car vehicle listed declarations replacement hire loaner"
   },
   {
    "clause_id": "ALL-GEN-1",
@@ -6593,7 +6633,8 @@
    "title": "Policy Period and Territory",
    "clause_type": "condition",
    "perils": [],
-   "body": "This policy applies only to loss, accident or occurrence which takes place during the policy period shown in the Declarations and within the policy territory. Coverage begins at 12:01 a.m. standard time on the effective date and ends at 12:01 a.m. standard time on the expiration date."
+   "body": "This policy applies only to loss, accident or occurrence which takes place during the policy period shown in the Declarations and within the policy territory. Coverage begins at 12:01 a.m. standard time on the effective date and ends at 12:01 a.m. standard time on the expiration date.",
+   "keywords": "policy period term dates effective expiry expiration started ended before after inception in force not yet started"
   },
   {
    "clause_id": "ALL-GEN-2",
@@ -6602,7 +6643,8 @@
    "title": "Cancellation and Nonpayment",
    "clause_type": "condition",
    "perils": [],
-   "body": "We may cancel this policy for nonpayment of premium by mailing notice at least 10 days before the date cancellation takes effect. Where a policy has lapsed for nonpayment, no coverage is afforded for any loss occurring on or after the date of lapse, regardless of when the claim is reported."
+   "body": "We may cancel this policy for nonpayment of premium by mailing notice at least 10 days before the date cancellation takes effect. Where a policy has lapsed for nonpayment, no coverage is afforded for any loss occurring on or after the date of lapse, regardless of when the claim is reported.",
+   "keywords": "lapsed lapse cancelled cancellation missed payment non payment nonpayment premium unpaid behind arrears stopped paying"
   },
   {
    "clause_id": "ALL-GEN-3",
@@ -6611,7 +6653,8 @@
    "title": "Misrepresentation on Application",
    "clause_type": "condition",
    "perils": [],
-   "body": "This policy was issued in reliance upon the information provided on the application. We may void this policy or deny a claim if an applicant made a material misrepresentation or omission in applying for coverage, where that misrepresentation was material to our decision to issue the policy or to the premium charged."
+   "body": "This policy was issued in reliance upon the information provided on the application. We may void this policy or deny a claim if an applicant made a material misrepresentation or omission in applying for coverage, where that misrepresentation was material to our decision to issue the policy or to the premium charged.",
+   "keywords": "application misrepresentation lied omitted did not disclose void"
   },
   {
    "clause_id": "ALL-GEN-4",
@@ -6620,7 +6663,8 @@
    "title": "Other Insurance",
    "clause_type": "condition",
    "perils": [],
-   "body": "If a loss covered by this policy is also covered by other insurance, we will pay only the proportion of the loss that the limit of liability applying under this policy bears to the total amount of insurance covering the loss."
+   "body": "If a loss covered by this policy is also covered by other insurance, we will pay only the proportion of the loss that the limit of liability applying under this policy bears to the total amount of insurance covering the loss.",
+   "keywords": "other insurance second policy double covered elsewhere"
   },
   {
    "clause_id": "ALL-GEN-5",
@@ -6629,7 +6673,8 @@
    "title": "Subrogation",
    "clause_type": "condition",
    "perils": [],
-   "body": "An insured may waive in writing before a loss all rights of recovery against any person. If not waived, we may require an assignment of rights of recovery for a loss to the extent that payment is made by us. If an assignment is sought, an insured must sign and deliver all related papers and cooperate with us."
+   "body": "An insured may waive in writing before a loss all rights of recovery against any person. If not waived, we may require an assignment of rights of recovery for a loss to the extent that payment is made by us. If an assignment is sought, an insured must sign and deliver all related papers and cooperate with us.",
+   "keywords": "subrogation recover from third party their insurer"
   },
   {
    "clause_id": "ALL-GEN-6",
@@ -6638,7 +6683,8 @@
    "title": "Appraisal",
    "clause_type": "condition",
    "perils": [],
-   "body": "If you and we fail to agree on the amount of loss, either may demand an appraisal of the loss. In this event, each party will choose a competent appraiser within 20 days after receiving a written request from the other, and the two appraisers will choose an umpire. A decision agreed to by any two will set the amount of loss."
+   "body": "If you and we fail to agree on the amount of loss, either may demand an appraisal of the loss. In this event, each party will choose a competent appraiser within 20 days after receiving a written request from the other, and the two appraisers will choose an umpire. A decision agreed to by any two will set the amount of loss.",
+   "keywords": "appraisal disagree dispute amount umpire valuation"
   }
  ]
 }
