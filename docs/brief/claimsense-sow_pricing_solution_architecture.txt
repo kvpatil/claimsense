@@ -1,0 +1,21 @@
+SoW, pricing and solution architecture
+
+Objective
+Your focus is to turn the discovery work into a concrete engagement plan and technical design.
+
+You have already identified the client problem, stakeholders, success criteria, and initial evaluation cases. Now you need to translate those findings into something that could realistically guide a client engagement: a defined scope of work, acceptance criteria, commercial assumptions, risks, system contracts, and an architecture that shows how the solution will operate.
+
+A key part of this stage is making the system boundary explicit. Deterministic operations such as identity, access control, dates, and monetary calculations must remain in code, while model judgment is used where interpretation and reasoning are required. Your architecture should make that distinction visible rather than leaving it implicit.
+
+You will also prepare the synthetic data structures and cloud environment needed for the implementation stages that follow.
+
+You have to work on and achieve all the milestones listed below during this week. By the end of this stage, you should have a design that is detailed enough to guide implementation and clear enough to explain to the client.
+
+
+Milestone Deliverables
+Statement of work of two pages: scope, acceptance criteria, intellectual property and data handling terms, and the five-week timeline.
+Architecture diagram with every data flow labelled and the boundary between deterministic code and model judgment marked explicitly.
+Pricing model with the underlying assumptions stated.
+Risk register of five risks with likelihood, impact and mitigation.
+Typed input and output contracts for all three client systems, including idempotency rules for any write operation.
+Synthetic data shapes for claims, policies and documents.

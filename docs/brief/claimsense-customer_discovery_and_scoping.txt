@@ -1,0 +1,17 @@
+Customer Discovery & Scoping 
+
+Objective
+Your focus is to understand the client problem clearly before you begin designing or building the solution.
+
+The client currently relies on an adjuster to manually work across the claims management system, policy administration system, and document store to gather information, check coverage, assess risk, and make the first decision. Before proposing a technical solution, you need to establish what the client actually needs, who is involved in the engagement, and how success will be measured.
+You will also begin creating the evidence and decision trail that will continue throughout the capstone by documenting architectural decisions and creating the first set of evaluation cases.
+
+You have to work on and achieve all the milestones listed below during this week. By the end of this stage, you should have a clearly scoped engagement with measurable success criteria and an initial evaluation baseline.
+
+Milestone Deliverables
+
+Engagement charter of one to two pages, naming the three client systems and their integration points.
+Stakeholder map and RACI, identifying the approver, the reviewer of co-pilot output, the daily user, and who can block rollout.
+Four quantified success criteria covering decision accuracy, pipeline latency, adjuster confirmation rate and fraud routing accuracy.
+DECISIONS.md, opened with at least three dated architectural decisions and the reason for each.
+An initial set of 20 evaluation cases spanning all four decision outcomes, including adversarial cases.

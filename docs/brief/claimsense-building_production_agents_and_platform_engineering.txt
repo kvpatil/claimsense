@@ -1,0 +1,16 @@
+Building Production Agents + Platform Engineering
+
+Objective
+Your focus is to move from architecture and planning to a working claims adjudication pipeline.
+At this stage, you will implement the agent-based portion of the system using the OpenAI Agents SDK and connect it to the policy corpus so that model judgments can be grounded in retrieved evidence. Coverage decisions should not simply state an answer; they must cite the policy clauses that were actually retrieved and used.
+The system should also become reproducible and controlled from an engineering perspective. It needs to run through containers, start consistently from a single command, and use CI with an evaluation gate so that a failing change cannot automatically progress through the delivery pipeline.
+The implementation must also preserve the distinction between model judgment and deterministic computation. A verdict produced by the model should be distinguishable from a deterministic fallback rather than appearing as the same type of output.
+You have to work on and achieve all the milestones listed below during this week. By the end of this stage, you should have a working pipeline capable of producing all required decision outcomes under change control.
+
+
+Milestone Deliverables
+Agent set implemented on the OpenAI Agents SDK with strict typed outputs.
+Container build and local orchestration; the stack starts with a single command.
+Retrieval over the policy corpus, with coverage output citing the clause identifiers actually retrieved.
+CI pipeline in which a failing evaluation gate blocks the image push.
+All four decision outcomes produced correctly, with model-generated verdicts distinguishable from deterministic fallback output.
