@@ -1,8 +1,15 @@
 """The three client systems, behind one seam.
 
-    CMS  claims management    the claim, the FNOL, the notes, the decision
-    PAS  policy administration the policy, coverages, limits, the clause corpus
-    DMS  document store        the files and the text OCR pulled out of them
+    CMS  Claims Management System      the claim, the first notice of loss
+                                       (FNOL), the notes, the decision
+    PAS  Policy Administration System  the policy, coverages, limits, and the
+                                       policy clause corpus
+    DMS  Document Management System    the files, and the text OCR pulled out
+                                       of them
+
+    Every acronym used anywhere in this repository is expanded in
+    docs/GLOSSARY.md. CMS is the one to watch: in insurance it is a CLAIMS
+    management system, not a content management system.
 
 Two backends, one interface:
 

@@ -5,7 +5,8 @@
  * in Week 1 it contains no AI of any kind.
  *
  * ClaimSense is OURS — the automated workflow the engagement puts behind that
- * desk. It does not advise the adjuster; it DOES the work the adjuster used to
+ * desk. It is NOT a claims management system: Northwind's CMS holds the
+ * claims and continues to, and ClaimSense writes a recommendation into it. It does not advise the adjuster; it DOES the work the adjuster used to
  * do, and surfaces a finished decision for confirmation. Keeping the two names
  * apart in code is what stops the demo quietly claiming we built the client's
  * portal.

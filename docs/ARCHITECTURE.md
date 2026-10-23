@@ -14,7 +14,8 @@ in `agent/src/claimsense_agent/determinism/`, asserted in
  ┌──────────────── CLIENT SYSTEMS (three vendors, three contracts) ─────────────┐
  │                                                                              │
  │   CMS                        PAS                        DMS                  │
- │   claims management          policy administration      document store       │
+ │   Claims Management          Policy Administration      Document Management  │
+ │   System                     System                     System               │
  │   claims · FNOL · notes      policies · coverages       files · OCR text     │
  │   fraud signals · decisions  limits · clause corpus     poisoned flag        │
  │                                                                              │

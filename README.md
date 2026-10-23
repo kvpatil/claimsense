@@ -2,11 +2,22 @@
 
 **The claims adjudication workflow, automated.**
 
-Northwind Mutual's adjusters work a claim by hand across three systems — the
-**claims management system**, the **policy administration system**, and the
-**document store** — reading the file, checking cover, finding the governing
-clause, working out what is payable, and writing the decision. ClaimSense is
-that workflow refactored into an automated pipeline.
+Northwind Mutual's adjusters work a claim by hand across three systems —
+
+| | | |
+|---|---|---|
+| **CMS** | Claims Management System | the claim, the first notice of loss, notes, decisions |
+| **PAS** | Policy Administration System | policies, dates, coverages, limits, the policy wording |
+| **DMS** | Document Management System | the files, and the text read out of them |
+
+— reading the file, checking cover, finding the governing clause, working out
+what is payable, and writing the decision. ClaimSense is that workflow
+refactored into an automated pipeline.
+
+**ClaimSense is not a claims management system.** It owns no system of record.
+Northwind's CMS holds the claims and continues to; ClaimSense reads all three
+systems and writes one thing back — a recommendation. Every acronym used
+anywhere in this repository is expanded in [`docs/GLOSSARY.md`](docs/GLOSSARY.md).
 
 What stays human is the **decision itself**: every outcome is produced as a
 recommendation and a licensed adjuster confirms it before anything reaches a
@@ -284,7 +295,9 @@ docs/
 
 ## Where to go next
 
-1. [`docs/week1/`](docs/week1/) · [`docs/week2/`](docs/week2/) · [`docs/week3/`](docs/week3/) — the milestone bundles
-2. [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — every flow, with the boundary marked
-3. [`docs/CONTRACTS.md`](docs/CONTRACTS.md) — the three contracts and the idempotency rules
-4. [`DECISIONS.md`](DECISIONS.md) — what was decided, and what it cost
+1. [`docs/GLOSSARY.md`](docs/GLOSSARY.md) — **every acronym, expanded**
+2. [`docs/week1/VALUE_STREAMS.md`](docs/week1/VALUE_STREAMS.md) — the workflows, who is in each, and where the automation lands
+3. [`docs/week1/`](docs/week1/) · [`docs/week2/`](docs/week2/) · [`docs/week3/`](docs/week3/) — the milestone bundles
+4. [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — every flow, with the boundary marked
+5. [`docs/CONTRACTS.md`](docs/CONTRACTS.md) — the three contracts and the idempotency rules
+6. [`DECISIONS.md`](DECISIONS.md) — what was decided, and what it cost

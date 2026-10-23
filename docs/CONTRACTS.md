@@ -1,5 +1,9 @@
 # Typed contracts — CMS · PAS · DMS
 
+> **CMS** Claims Management System · **PAS** Policy Administration System ·
+> **DMS** Document Management System. Every acronym in this repository is
+> expanded in [`GLOSSARY.md`](GLOSSARY.md).
+
 Three client systems, three contracts, three credentials. A key scoped to one
 is refused by the others with **403 `wrong_system`** — the caller
 authenticated, they are simply at the wrong door.
@@ -149,7 +153,7 @@ one. That drift happened once; `tests/test_backend_parity.py` now catches it.
 
 ---
 
-## DMS — Document Store
+## DMS — Document Management System
 
 Base `/api/dms/v1` · key `DMS_API_KEY`
 

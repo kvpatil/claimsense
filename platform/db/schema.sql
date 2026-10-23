@@ -7,9 +7,15 @@
 -- look easier than it is and would let a careless join paper over a boundary
 -- that is real. Nothing below crosses a schema with a foreign key:
 --
---   pas.*   policy administration — the system of record for cover
---   cms.*   claims management     — the system of record for the claim
---   dms.*   document store        — the files, and the text pulled out of them
+--   pas.*   Policy Administration System — the system of record for COVER
+--   cms.*   Claims Management System     — the system of record for the CLAIM
+--   dms.*   Document Management System   — the files, and the text OCR pulled
+--                                          out of them
+--
+-- Note on CMS: in insurance it is a Claims Management System. Most engineers
+-- read "Content Management System" first, which is the wrong system entirely.
+-- The acronyms are the client's and are kept, but every doc expands them, and
+-- docs/GLOSSARY.md defines every one used anywhere in this repository.
 --
 -- Cross-system references are PLAIN COLUMNS (cms.claims.policy_id, no FK). That
 -- is the honest shape: in the real estate there is no referential integrity

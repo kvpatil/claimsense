@@ -36,7 +36,7 @@ What an adjuster does today, per claim:
 
 | Step | System | What it takes |
 |---|---|---|
-| Read the claim and the first notice of loss | Claims management | the claimant's account, in their words |
+| Read the claim and the first notice of loss (FNOL) | Claims management | the claimant's account, in their words |
 | Check cover was in force on the date of loss | Policy administration | effective/expiry dates, lapse status |
 | Find the limit and deductible for the peril | Policy administration | which coverage section applies |
 | See what has been supplied | Document store | and work out what is missing |
@@ -51,9 +51,9 @@ inconsistency and the leakage come from.
 
 | System | Role | ClaimSense reads | ClaimSense writes |
 |---|---|---|---|
-| **Claims Management (CMS)** | system of record for the claim | claim, first notice of loss, adjuster notes, recorded fraud indicators | the recommendation, and the adjuster's confirmation |
-| **Policy Administration (PAS)** | system of record for cover | policy, dates, status, coverages, limits, deductibles, the policy wording | **nothing — read-only by design** |
-| **Document Store (DMS)** | the files on a claim | documents and extracted text, including the poisoned flag | a request for a missing document |
+| **Claims Management System (CMS)** | system of record for the claim | claim, first notice of loss, adjuster notes, recorded fraud indicators | the recommendation, and the adjuster's confirmation |
+| **Policy Administration System (PAS)** | system of record for cover | policy, dates, status, coverages, limits, deductibles, the policy wording | **nothing — read-only by design** |
+| **Document Management System (DMS)** | the files on a claim | documents and extracted text, including the poisoned flag | a request for a missing document |
 
 Three separate vendors, three separate contracts, three separate credentials.
 There is no referential integrity between them: a claim can carry a policy
@@ -63,11 +63,18 @@ rather than assume it away.
 **PAS is read-only and will stay so.** An automated adjudicator that could
 alter a policy could manufacture the cover it then finds.
 
+## 3a. How the work flows
+
+The current workflow above is one chain in one value stream. The full map —
+three value streams, the workflows in each, which of the seven desks
+participates in each, and where ClaimSense lands — is in
+[`VALUE_STREAMS.md`](VALUE_STREAMS.md).
+
 ## 4. Scope of the pilot
 
 **In scope.** First decisions on personal-lines property and auto claims,
 producing one of four outcomes — approve, deny, request more information, or
-refer to SIU — with the policy clauses the decision rests on cited and
+refer to the Special Investigations Unit (SIU) — with the policy clauses the decision rests on cited and
 recorded. The adjuster confirms every outcome.
 
 **Out of scope for the pilot.** Commercial lines. Litigated and represented

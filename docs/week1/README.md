@@ -14,6 +14,8 @@ existing claims workflow, and what the engagement commits to changing.
 | 3 | Four quantified success criteria | [`SUCCESS_CRITERIA.md`](SUCCESS_CRITERIA.md) |
 | 4 | Architectural decisions, dated, with reasons | [`../../DECISIONS.md`](../../DECISIONS.md) |
 | 5 | Initial 20 evaluation cases, all four outcomes, including adversarial | [`EVAL_CASES.md`](EVAL_CASES.md) |
+| 6 | Value streams, workflows, and which role is in each | [`VALUE_STREAMS.md`](VALUE_STREAMS.md) |
+| — | Every acronym, expanded | [`../GLOSSARY.md`](../GLOSSARY.md) |
 
 ## See the existing system
 
@@ -41,6 +43,18 @@ worked out on paper.
 | **The queue grows** | 56 of 60 claims already past 25 days |
 
 ---
+
+## Where the automation lands
+
+The engagement is not "automate claims". It is **steps W2–W5 of the settlement
+value stream**, with W1 and the decision itself left human — see
+[`VALUE_STREAMS.md`](VALUE_STREAMS.md).
+
+The most expensive fact that map surfaces: **44% of claims need a desk beyond
+the first one** (over an adjuster's authority), and **16% need an appraiser**
+(total loss). Nothing works that out today, so an adjuster does the reading
+and only then discovers they cannot finish. The handoff is not the cost — the
+work done before discovering the handoff is.
 
 ## The three client systems
 

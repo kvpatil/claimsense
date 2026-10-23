@@ -52,12 +52,19 @@ require_clean_slate() {
 
 printf "${BOLD}Week 1 — Northwind Mutual, Claims Desk${RESET}\n"
 printf "${DIM}The existing system. Manual adjudication, no automation.${RESET}\n"
+echo
+printf "${DIM}  CMS   Claims Management System      the claim and its history${RESET}\n"
+printf "${DIM}  PAS   Policy Administration System  what the policy covers${RESET}\n"
+printf "${DIM}  DMS   Document Management System    the files on the claim${RESET}\n"
+printf "${DIM}  FNOL  First Notice of Loss          the claimant's own account${RESET}\n"
+printf "${DIM}  SIU   Special Investigations Unit   the fraud desk${RESET}\n"
+printf "${DIM}  ACV   Actual Cash Value             what the item was worth${RESET}\n"
+printf "${DIM}                                      full list: docs/GLOSSARY.md${RESET}\n"
 
 preflight
 
 step "1. Bring up Northwind's estate"
-note "Three systems behind one portal: claims management, policy"
-note "administration, and the document store."
+note "Three systems behind one portal: CMS, PAS and DMS."
 docker compose up -d --wait db seed web >/dev/null 2>&1
 require_clean_slate
 ok "Claims Desk is up on http://localhost:3200"
@@ -76,20 +83,32 @@ pause
 step "3. What working ONE claim actually involves"
 note "Claim 4414 — a water loss. Watch how many systems it takes."
 echo
-printf "  ${YELLOW}claims management${RESET}  the claim and what the insured said\n"
+printf "  ${YELLOW}CMS — Claims Management System${RESET}  the claim, and the first\n"
+printf "       notice of loss in the claimant's own words\n"
 psql_ -F' | ' -c "SELECT c.claim_number, c.peril, c.date_of_loss, to_char(c.claimed_amount_cents/100.0,'FM999,999.00')
                     FROM cms.claims c WHERE c.claim_id=4414;" | sed 's/^/    /'
 psql_ -c "SELECT narrative FROM cms.fnol WHERE claim_id=4414;" | fold -s -w 72 | sed 's/^/    /'
 echo
-printf "  ${YELLOW}policy administration${RESET}  was there cover, and how much\n"
+printf "  ${YELLOW}PAS — Policy Administration System${RESET}  was there cover, and how much\n"
 psql_ -F' | ' -c "SELECT p.policy_number, p.product, p.status, p.effective_date, p.expiration_date
                     FROM pas.policies p JOIN cms.claims c ON c.policy_id=p.policy_id
                    WHERE c.claim_id=4414;" | sed 's/^/    /'
-psql_ -F' | ' -c "SELECT cv.coverage_code, to_char(cv.limit_cents/100.0,'FM999,999'), to_char(cv.deductible_cents/100.0,'FM999,999')
-                    FROM pas.coverages cv JOIN cms.claims c ON c.policy_id=cv.policy_id
-                   WHERE c.claim_id=4414 ORDER BY cv.coverage_code;" | sed 's/^/    /'
+psql_ -F' | ' -c "
+  SELECT rpad(cv.coverage_code, 6),
+         rpad(CASE cv.coverage_code
+                WHEN 'DWELL' THEN 'Dwelling'
+                WHEN 'PP'    THEN 'Personal Property'
+                WHEN 'LIAB'  THEN 'Personal Liability'
+                WHEN 'ALE'   THEN 'Additional Living Expense'
+                WHEN 'COLL'  THEN 'Collision'
+                WHEN 'COMP'  THEN 'Comprehensive'
+                ELSE cv.coverage_code END, 26),
+         'limit \$' || to_char(cv.limit_cents/100.0,'FM999,999'),
+         'deductible \$' || to_char(cv.deductible_cents/100.0,'FM999,999')
+    FROM pas.coverages cv JOIN cms.claims c ON c.policy_id=cv.policy_id
+   WHERE c.claim_id=4414 ORDER BY cv.coverage_code;" | sed 's/^/    /'
 echo
-printf "  ${YELLOW}document store${RESET}  what has been supplied\n"
+printf "  ${YELLOW}DMS — Document Management System${RESET}  what has been supplied\n"
 psql_ -F' | ' -c "SELECT doc_type, page_count FROM dms.documents WHERE claim_id=4414 ORDER BY doc_type;" | sed 's/^/    /'
 pause
 
@@ -127,7 +146,8 @@ pause
 
 step "5. A claim is not worked by one person"
 note "Northwind's claims operation is seven desks, and most of them"
-note "cannot decide a claim at all:"
+note "cannot decide a claim at all. SIU is the Special Investigations"
+note "Unit — the fraud desk; an appraiser values a total loss:"
 echo
 psql_ -F' | ' -c "
   SELECT rpad(role, 16),
@@ -156,7 +176,7 @@ TL=$(psql_ -c "SELECT count(*) FROM cms.claims
                 WHERE acv_cents IS NOT NULL
                   AND claimed_amount_cents::numeric / acv_cents >= 0.75;")
 OVER=$(psql_ -c "SELECT count(*) FROM cms.claims WHERE claimed_amount_cents > 2500000;")
-printf "  %-44s %s\n" "Claims that are total losses (>=75% of value)" "$TL"
+printf "  %-44s %s\n" "Total losses (damage >=75%% of cash value)" "$TL"
 printf "  %-44s %s\n" "Claims over an adjuster's \$25,000 authority" "$OVER"
 note "Each of those is a handoff: re-read the file, re-establish the"
 note "facts, wait in another queue. The adjuster who opens it first"
@@ -177,7 +197,7 @@ printf "  %-34s %s\n" "Claims already past 25 days" "$AGED"
 note "Every one of those is accruing fair-claims exposure while it waits."
 
 step "Week 1 — what discovery found"
-printf "  ${BOLD}Three systems${RESET}  no adjuster sees a claim in one place\n"
+printf "  ${BOLD}Three systems${RESET}  CMS, PAS, DMS — no adjuster sees a claim in one place\n"
 printf "  ${BOLD}Seven desks${RESET}  and nothing works out which one a claim needs\n"
 printf "  ${BOLD}No citation trail${RESET}  the clause relied on is never recorded\n"
 printf "  ${BOLD}Inconsistent${RESET}  the same facts reach different adjusters differently\n"
