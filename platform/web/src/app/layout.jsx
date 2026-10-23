@@ -1,8 +1,12 @@
 import "./globals.css";
 
+import { CLIENT } from "@/lib/client";
+
 export const metadata = {
-  title: "ClaimSense",
-  description: "Claims adjudication co-pilot — recommends, never decides.",
+  // The browser tab says the CLIENT's system, because that is whose portal
+  // this is. ClaimSense is a panel inside it, not the application.
+  title: `${CLIENT.system} — ${CLIENT.name}`,
+  description: `Claims adjudication for ${CLIENT.name}.`,
 };
 
 export default function RootLayout({ children }) {

@@ -3,7 +3,9 @@ import { Page, Crumb, Panel } from "@/components/Chrome";
 import { OutcomeBadge, SourceBadge, ConfirmBadge } from "@/components/Badges";
 import { getAdjusters, getClaimBundle, getClauses } from "@/lib/queries";
 import { usd, shortDate, titleCase } from "@/lib/format";
+import { VENDOR } from "@/lib/client";
 import ConfirmPanel from "./ConfirmPanel";
+import ManualDecisionPanel from "./ManualDecisionPanel";
 
 export const dynamic = "force-dynamic";
 
@@ -216,13 +218,15 @@ export default async function Workbench({ params }) {
           </Panel>
 
           <Panel title="First decision"
-                 sub={latest ? "Drafted by ClaimSense. Not yet a decision."
-                             : "Not yet worked."}>
+                 sub={latest ? `Produced by ${VENDOR.product}. Not yet a decision.`
+                             : "Worked by hand — the as-is workflow."}>
             {!latest ? (
-              <p className="text-sm text-muted">
-                Run <code className="px-1.5 py-0.5 rounded bg-note text-ink num">
-                make agent CLAIM={claim.claim_id}</code> to produce a recommendation.
-              </p>
+              /* No recommendation on file. This is the Week 1 state and the
+                 portal's original capability: the adjuster decides unaided. */
+              <ManualDecisionPanel
+                claimId={claim.claim_id}
+                adjusters={adjusters}
+                suggestedCents={null} />
             ) : (
               <div className="space-y-4">
                 <div className="flex flex-wrap items-center gap-2">

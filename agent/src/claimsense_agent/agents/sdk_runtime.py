@@ -90,8 +90,18 @@ def build_tools(data, claim_id: int | str, state: dict[str, Any]):
         })
 
     @function_tool
-    def search_clauses(query: str) -> str:
-        """Retrieve policy clauses. Cite only ids returned by this tool."""
+    def search_policy_clauses(query: str) -> str:
+        """Search the policy wording and return the clauses that govern.
+
+        This is the tool that replaces the adjuster's manual search of the
+        form. The manual version is still in the portal at /policy: type words
+        and read what comes back, unranked, with no knowledge of the claim.
+
+        This one is handed the claim's product and peril, pre-filters the
+        corpus on both, ranks the rest against the claimant's own narrative,
+        and RECORDS the ids it returned — which is what makes a citation
+        checkable afterwards. Cite only ids this tool returned.
+        """
         bundle = state.get("bundle") or {}
         policy = bundle.get("policy")
         claim = bundle["claim"]
@@ -118,7 +128,7 @@ def build_tools(data, claim_id: int | str, state: dict[str, Any]):
              "type": c["clause_type"], "body": c["body"]}
             for c in clauses if c])
 
-    return load_claim, gather_evidence, search_clauses
+    return load_claim, gather_evidence, search_policy_clauses
 
 
 def build_agents(tools):
@@ -126,13 +136,13 @@ def build_agents(tools):
     from agents import Agent
     from agents.extensions.models.litellm_model import LitellmModel
 
-    load_claim, gather_evidence, search_clauses = tools
+    load_claim, gather_evidence, search_policy_clauses = tools
 
     coverage = Agent(
         name="Coverage",
         instructions=coverage_stage.INSTRUCTIONS,
         model=LitellmModel(model=MODEL_SMART),   # the money step
-        tools=[search_clauses],
+        tools=[search_policy_clauses],
     )
     evidence = Agent(
         name="Evidence",
@@ -235,7 +245,7 @@ def load_claim() -> str: ...          # CMS: claim + first notice of loss
 @function_tool
 def gather_evidence() -> str: ...     # CMS + PAS + DMS, quarantine applied
 @function_tool
-def search_clauses(query: str) -> str: ...   # PAS: BM25 over the corpus
+def search_policy_clauses(query: str) -> str: ...   # PAS: BM25 over the corpus
 
 # --- guardrails ------------------------------------------------------------
 @input_guardrail                      # drop poisoned documents, fail closed
@@ -256,7 +266,7 @@ async def citations(ctx, agent, output):
 # Cost engineering: the smart model touches ONE step, the one where money moves.
 coverage = Agent(name="Coverage", instructions=COVERAGE_INSTRUCTIONS,
                  model=LitellmModel(model=MODEL_SMART),
-                 tools=[search_clauses], output_guardrails=[citations])
+                 tools=[search_policy_clauses], output_guardrails=[citations])
 evidence = Agent(name="Evidence", instructions=EVIDENCE_INSTRUCTIONS,
                  model=LitellmModel(model=MODEL_FAST),
                  tools=[gather_evidence], input_guardrails=[quarantine],

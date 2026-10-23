@@ -108,8 +108,21 @@ export async function getClauses(clauseIds) {
 }
 
 export async function getAdjusters() {
+  /* PEOPLE only.
+   *
+   * Seat 5 is the ClaimSense service account — scope 'all', no licence — and
+   * it is not a person. It leaked into the "deciding as" dropdown, which both
+   * broke the Week 1 story (the client's portal showing a vendor's service
+   * account before the vendor arrived) and invited someone to try a seat
+   * that can never confirm anything.
+   *
+   * Filtered on license_number rather than by id: the rule is "seats that can
+   * actually decide", which is a property, not a magic number. */
   return query(`SELECT adjuster_id::int, full_name, email, license_number,
-                       role, scope FROM cms.adjusters WHERE active ORDER BY adjuster_id`);
+                       role, scope
+                  FROM cms.adjusters
+                 WHERE active AND license_number IS NOT NULL
+                 ORDER BY adjuster_id`);
 }
 
 export async function queueStats() {

@@ -1,23 +1,20 @@
 import Link from "next/link";
 import ThemeToggle from "./ThemeToggle";
+import { CLIENT } from "@/lib/client";
 
-/** The mark: a shield with a reading line through it.
+/** Northwind Mutual's mark — a compass rose, north-weighted.
  *
- * Drawn inline rather than linked so it inherits `currentColor` and follows
- * the theme. An <img> cannot; that is the whole reason Fintor had to ship two
- * logo files and pick between them server-side.
+ * The CLIENT's identity, not ours. Drawn inline so it follows the theme.
  */
 export function Mark({ className = "h-7 w-7" }) {
   return (
-    <svg viewBox="0 0 32 32" className={className} role="img" aria-label="ClaimSense">
-      <path d="M16 2.5 4.5 7v9.2c0 6.6 4.7 11.6 11.5 13.3 6.8-1.7 11.5-6.7 11.5-13.3V7L16 2.5Z"
-            fill="currentColor" opacity="0.14" />
-      <path d="M16 2.5 4.5 7v9.2c0 6.6 4.7 11.6 11.5 13.3 6.8-1.7 11.5-6.7 11.5-13.3V7L16 2.5Z"
-            fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
-      <path d="M10 15.5h5.2M10 19h9" stroke="currentColor" strokeWidth="1.6"
-            strokeLinecap="round" />
-      <circle cx="19.4" cy="14.2" r="3.4" fill="none" stroke="currentColor" strokeWidth="1.6" />
-      <path d="m22 16.8 2.6 2.6" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+    <svg viewBox="0 0 32 32" className={className} role="img"
+         aria-label={CLIENT.name}>
+      <circle cx="16" cy="16" r="12.5" fill="none" stroke="currentColor"
+              strokeWidth="1.6" />
+      <path d="M16 4.5 19.2 14 16 16 12.8 14Z" fill="currentColor" />
+      <path d="M16 27.5 12.8 18 16 16 19.2 18Z" fill="currentColor" opacity="0.4" />
+      <circle cx="16" cy="16" r="1.6" fill="currentColor" />
     </svg>
   );
 }
@@ -26,16 +23,21 @@ export function TopNav({ current }) {
   const tabs = [
     { href: "/", label: "Overview" },
     { href: "/claims", label: "Claims" },
-    { href: "/policy", label: "Policy corpus" },
-    { href: "/internals", label: "Internals" },
+    { href: "/policy", label: "Policy wording" },
+    { href: "/internals", label: "Admin" },
   ];
   return (
     <header className="border-b border-line bg-paper sticky top-0 z-20">
       <div className="mx-auto max-w-[1600px] px-5 h-14 flex items-center gap-6">
-        <Link href="/" className="flex items-center gap-2.5 text-accent shrink-0">
+        <Link href="/" className="flex items-center gap-2.5 shrink-0"
+              style={{ color: "var(--client-mark)" }}>
           <Mark />
-          <span className="font-serif text-ink text-lg font-semibold tracking-tight">
-            ClaimSense
+          <span className="leading-tight">
+            <span className="block font-serif text-ink text-base font-semibold
+                             tracking-tight">
+              {CLIENT.name}
+            </span>
+            <span className="block text-xs text-muted -mt-0.5">{CLIENT.system}</span>
           </span>
         </Link>
         <nav className="flex items-center gap-1 flex-1">
@@ -51,11 +53,6 @@ export function TopNav({ current }) {
             );
           })}
         </nav>
-        {/* Stated, not implied. Everything this product outputs is a
-            recommendation, and the chrome should say so on every screen. */}
-        <span className="chip border-accent text-accent hidden md:inline-flex">
-          Recommends · never decides
-        </span>
         <ThemeToggle />
       </div>
     </header>
@@ -85,12 +82,11 @@ export function Crumb({ items }) {
   );
 }
 
-/** A labelled section. `tone="code"` marks a panel whose content is
- *  deterministic, so the boundary is visible on screen and not only in docs. */
-export function Panel({ title, sub, right, tone, children, className = "" }) {
+export function Panel({ title, sub, right, tone, vendor, children, className = "" }) {
   return (
-    <section className={`card ${className}`}>
-      <div className="flex items-start justify-between gap-4 px-5 pt-4 pb-3 border-b border-line">
+    <section className={`card ${vendor ? "border-accent/40" : ""} ${className}`}>
+      <div className={`flex items-start justify-between gap-4 px-5 pt-4 pb-3
+                       border-b ${vendor ? "border-accent/25 bg-tint/40" : "border-line"}`}>
         <div>
           <h2 className="font-serif text-base font-semibold leading-tight">{title}</h2>
           {sub && <p className="text-sm text-muted mt-0.5">{sub}</p>}

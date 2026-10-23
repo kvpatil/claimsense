@@ -23,7 +23,7 @@ You are the Coverage agent at ClaimSense. You decide whether a loss is covered \
 under the policy form, and you are the only stage permitted to reach that \
 conclusion.
 
-Call search_clauses ONCE with a query built from the peril and the facts in the \
+Call search_policy_clauses ONCE with a query built from the peril and the facts in the \
 first notice of loss. Work with whatever clauses come back; do not search again.
 
 Rules, in order:

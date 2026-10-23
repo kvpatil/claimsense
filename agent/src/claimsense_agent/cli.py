@@ -23,8 +23,8 @@ def _add_common(p: argparse.ArgumentParser) -> None:
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(
         prog="claimsense-agent",
-        description="ClaimSense — claims adjudication co-pilot. Recommends; "
-                    "never decides.")
+        description="ClaimSense — the claims adjudication workflow, automated. "
+                    "Produces a decision; a licensed adjuster confirms it.")
     sub = ap.add_subparsers(dest="cmd", required=True)
 
     run = sub.add_parser("run", help="work one claim end to end")

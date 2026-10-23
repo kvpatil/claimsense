@@ -25,6 +25,9 @@
   --up:     27 127 78;     /* #1b7f4e */
   --down:  180  51  47;    /* #b4332f */
   --warn:  154 106  27;    /* #9a6a1b */
+  /* The CLIENT's house colour. Northwind's, not ours — the violet accent
+     belongs to ClaimSense and appears only in the panel we install. */
+  --client-mark: #1f4d52;
   color-scheme: light;
 }
 
@@ -32,7 +35,8 @@
   :root:not([data-theme="light"]) { --ink: 231 230 235; --muted: 157 153 166;
     --line: 53 50 60; --paper: 29 27 33; --ground: 19 18 23; --note: 34 31 40;
     --accent: 155 122 235; --tint: 32 29 40; --up: 79 191 133;
-    --down: 232 120 111; --warn: 210 162 72; color-scheme: dark; }
+    --down: 232 120 111; --warn: 210 162 72; --client-mark: #6fb3ab;
+    color-scheme: dark; }
 }
 /* The explicit override has to win in BOTH directions, so each theme is
  * stated attribute-scoped as well as media-scoped. A toggle that only works
@@ -40,7 +44,8 @@
 :root[data-theme="dark"] { --ink: 231 230 235; --muted: 157 153 166;
   --line: 53 50 60; --paper: 29 27 33; --ground: 19 18 23; --note: 34 31 40;
   --accent: 155 122 235; --tint: 32 29 40; --up: 79 191 133;
-  --down: 232 120 111; --warn: 210 162 72; color-scheme: dark; }
+  --down: 232 120 111; --warn: 210 162 72; --client-mark: #6fb3ab;
+  color-scheme: dark; }
 :root[data-theme="light"] { --ink: 26 24 32; --muted: 88 84 97;
   --line: 217 214 224; --paper: 253 253 253; --ground: 247 246 249;
   --note: 238 237 241; --accent: 82 31 205; --tint: 243 239 252;

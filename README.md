@@ -1,12 +1,17 @@
 # ClaimSense
 
-A claims-adjudication co-pilot. It reads a claim across the three systems an
-adjuster works by hand — the **claims management system**, the **policy
-administration system**, and the **document store** — checks coverage against
-the policy corpus, assesses fraud risk, and drafts a first decision.
+**The claims adjudication workflow, automated.**
 
-**A licensed adjuster confirms every outcome.** ClaimSense recommends; it never
-decides. Nothing reaches a claimant until a human with a licence says so.
+Northwind Mutual's adjusters work a claim by hand across three systems — the
+**claims management system**, the **policy administration system**, and the
+**document store** — reading the file, checking cover, finding the governing
+clause, working out what is payable, and writing the decision. ClaimSense is
+that workflow refactored into an automated pipeline.
+
+What stays human is the **decision itself**: every outcome is produced as a
+recommendation and a licensed adjuster confirms it before anything reaches a
+claimant. That is a regulatory requirement and a deliberate design constraint,
+not a hedge about the automation's quality.
 
 ```bash
 docker compose up          # the whole stack: db + schemas + seed + console on :3200

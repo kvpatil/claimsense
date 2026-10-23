@@ -132,8 +132,8 @@ Base `/api/pas/v1` · key `PAS_API_KEY` · **read-only**
 | GET | `/policies/{id}/coverages` | limits, deductibles, coinsurance |
 | GET | `/clauses` | the corpus retrieval ranks over |
 
-**There is no write contract, deliberately.** A claims co-pilot that could
-alter a policy could manufacture the coverage it then finds.
+**There is no write contract, deliberately.** An automated adjudicator that
+could alter a policy could manufacture the coverage it then finds.
 
 **On the 404.** `cms.claims.policy_id` crosses a vendor boundary with no
 foreign key behind it, so a dangling reference is reachable in production — it

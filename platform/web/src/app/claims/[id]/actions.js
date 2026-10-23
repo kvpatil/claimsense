@@ -74,3 +74,82 @@ export async function confirmDecision(formData) {
   revalidatePath("/claims");
   return { ok: true, overridden: Boolean(override) };
 }
+
+
+/**
+ * Record a decision BY HAND — the as-is workflow, with no agent involved.
+ *
+ * This is what the portal could already do before ClaimSense existed, and it
+ * is what Week 1 demonstrates: an adjuster reads the three systems, forms a
+ * view, and types the outcome and the reasoning themselves. Everything that
+ * makes it slow is visible here — the clauses have to be found by hand, the
+ * numbers worked out by hand, and nothing is pre-filled.
+ *
+ * The row it writes is deliberately indistinguishable in SHAPE from one the
+ * agent produces, except for `source`. That is the point of the comparison:
+ * same table, same confirmation path, same audit trail — only the thing that
+ * produced the draft changed.
+ */
+export async function recordManualDecision(formData) {
+  const claimId = Number(formData.get("claim_id"));
+  const adjusterId = Number(formData.get("adjuster_id"));
+  const outcome = formData.get("outcome");
+  const rationale = (formData.get("rationale") || "").trim();
+  const settlement = formData.get("settlement_cents");
+  const cited = (formData.get("cited_clause_ids") || "")
+    .split(/[\s,]+/).filter(Boolean);
+
+  if (!OUTCOMES.includes(outcome)) {
+    return { error: "Pick one of the four outcomes." };
+  }
+  if (rationale.length < 20) {
+    return { error: "The rationale goes to the claimant — write at least a sentence." };
+  }
+
+  const adjuster = await queryOne(
+    `SELECT adjuster_id::int, full_name, role, license_number, active
+       FROM cms.adjusters WHERE adjuster_id = $1`, [adjusterId]);
+  if (!adjuster?.active) return { error: "That adjuster seat is not active." };
+  if (!adjuster.license_number) {
+    return { error: `${adjuster.full_name} holds no adjuster licence and may `
+                  + `not decide a claim.` };
+  }
+
+  // Same rule the API enforces: a settlement only accompanies an approval.
+  // A human can get this wrong as easily as a model can, so the check lives
+  // below both of them rather than in either.
+  let settlementCents = null;
+  if (outcome === "APPROVE") {
+    const parsed = Number(settlement);
+    if (!Number.isInteger(parsed) || parsed < 0) {
+      return { error: "Enter the payable amount in whole cents." };
+    }
+    settlementCents = parsed;
+  }
+
+  const decision = await queryOne(
+    `INSERT INTO cms.decisions
+       (decision_id, claim_id, outcome, source, rationale, cited_clause_ids,
+        settlement_cents, confidence, confirmed_by, confirmed_at)
+     VALUES ((SELECT COALESCE(MAX(decision_id),0)+1 FROM cms.decisions),
+             $1, $2, 'manual_adjuster', $3, $4, $5, NULL, $6, now())
+     RETURNING decision_id`,
+    [claimId, outcome, rationale, cited, settlementCents, adjusterId]);
+
+  await query(`UPDATE cms.claims SET status = 'decided' WHERE claim_id = $1`,
+              [claimId]);
+
+  await logAudit({
+    adjusterId, system: "cms", action: "manual_decision",
+    resourceType: "decision", resourceId: decision.decision_id,
+    decision: "allow",
+    detail: { licence: adjuster.license_number, outcome, via: "console-manual",
+              cited_clause_ids: cited },
+  });
+
+  revalidatePath(`/claims/${claimId}`);
+  revalidatePath("/claims");
+  return { ok: true };
+}
+
+const OUTCOMES = ["APPROVE", "DENY", "MORE_INFO", "SIU_REFERRAL"];

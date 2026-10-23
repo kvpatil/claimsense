@@ -199,7 +199,12 @@ CREATE TABLE cms.decisions (
     decision_id          BIGINT PRIMARY KEY,
     claim_id             BIGINT      NOT NULL REFERENCES cms.claims(claim_id),
     outcome              TEXT        NOT NULL,   -- APPROVE | DENY | MORE_INFO | SIU_REFERRAL
-    source               TEXT        NOT NULL,   -- model | deterministic_fallback
+    -- THREE values, not two. A decision an adjuster typed by hand is neither
+    -- a model verdict nor a deterministic fallback, and collapsing it into
+    -- either would make the before/after comparison meaningless: the whole
+    -- question the engagement answers is what changed when the draft stopped
+    -- being human-written.
+    source               TEXT        NOT NULL,   -- model | deterministic_fallback | manual_adjuster
     rationale            TEXT        NOT NULL,
     cited_clause_ids     TEXT[]      NOT NULL DEFAULT '{}',
     settlement_cents     BIGINT,

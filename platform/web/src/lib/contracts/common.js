@@ -35,7 +35,14 @@ export const Outcome = z.enum(["APPROVE", "DENY", "MORE_INFO", "SIU_REFERRAL"]);
 // The milestone requirement, in the contract itself: a verdict the model
 // produced and one a deterministic check substituted are different kinds of
 // output and must never be mistaken for one another.
-export const VerdictSource = z.enum(["model", "deterministic_fallback"]);
+//
+// `manual_adjuster` is the third: a decision a human wrote unaided, which is
+// how every claim was worked before ClaimSense. It shares this column
+// deliberately — same table, same confirmation path, same audit trail — so
+// the only thing that differs between the as-is and the to-be workflow is
+// what produced the draft.
+export const VerdictSource = z.enum(["model", "deterministic_fallback",
+                                     "manual_adjuster"]);
 
 export const DocType = z.enum([
   "police_report", "photo", "estimate", "invoice", "proof_of_loss", "receipt",

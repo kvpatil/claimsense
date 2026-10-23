@@ -4,8 +4,8 @@ import { Cents, IsoDate, Peril, Product } from "./common.js";
 /** PAS — Policy Administration System. READ-ONLY to ClaimSense.
  *
  * There is no write contract in this file and that is deliberate: the agent
- * reads cover, it never alters it. A claims co-pilot that could edit a policy
- * could manufacture the coverage it then finds.
+ * reads cover, it never alters it. An automated adjudicator that could edit a
+ * policy could manufacture the coverage it then finds.
  */
 
 export const Policy = z.object({
