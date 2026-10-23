@@ -7,7 +7,11 @@ PORT     ?= 3200
 CLAIM    ?= 4401
 DB_URL   ?= postgresql://claimsense:claimsense@localhost:5433/claimsense
 CONSOLE  ?= http://localhost:$(PORT)
-COMPOSE  := docker compose -f platform/db/docker-compose.yml
+# ONE compose file, at the root. There used to be a second under
+# platform/db/ and the two drifted immediately: the root stack named the
+# service `db` while the other named it `claimsense-db`, so `make keys`
+# started failing against a stack that was plainly running.
+COMPOSE  := docker compose
 
 # Prefer the agent's venv when it exists, fall back to system python otherwise.
 # The $0 gate runs on the stdlib, so a missing venv must not stop `make eval` —
@@ -24,9 +28,9 @@ help: ## show this list
 	  awk 'BEGIN{FS=":.*?## "}{printf "  \033[36m%-10s\033[0m %s\n", $$1, $$2}'
 
 up: ## Postgres + the three schemas + synthetic seed + scoped keys
-	$(COMPOSE) up -d
+	$(COMPOSE) up -d --wait db
 	@echo "==> waiting for Postgres…"
-	@until $(COMPOSE) exec -T claimsense-db pg_isready -U claimsense >/dev/null 2>&1; do sleep 1; done
+	@until $(COMPOSE) exec -T db pg_isready -U claimsense >/dev/null 2>&1; do sleep 1; done
 	@./platform/db/load.sh
 	@$(MAKE) --no-print-directory keys
 	@echo ""
@@ -77,7 +81,7 @@ doctor: ## check prerequisites and report what is missing
 	@echo "agent  : $(PY)"
 	@echo "node   : $$(node -v 2>/dev/null || echo MISSING)"
 	@echo "python : $$(python3 -V 2>/dev/null || echo MISSING)"
-	@echo "db     : $$($(COMPOSE) exec -T claimsense-db pg_isready -U claimsense 2>/dev/null || echo 'not running — make up')"
+	@echo "db     : $$($(COMPOSE) exec -T db pg_isready -U claimsense 2>/dev/null || echo 'not running — make up')"
 
 down: ## stop Postgres (data survives)
 	$(COMPOSE) down

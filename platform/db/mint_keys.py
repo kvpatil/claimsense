@@ -30,8 +30,8 @@ SYSTEMS = [("cms", AGENT_SEAT, "claimsense agent — claims management"),
 
 def psql(sql: str) -> str:
     out = subprocess.run(
-        ["docker", "compose", "-f", str(HERE / "docker-compose.yml"), "exec", "-T",
-         "claimsense-db", "psql", "-U", "claimsense", "-d", "claimsense",
+        ["docker", "compose", "-f", str(HERE.parent.parent / "docker-compose.yml"),
+         "exec", "-T", "db", "psql", "-U", "claimsense", "-d", "claimsense",
          "-q", "-t", "-A", "-v", "ON_ERROR_STOP=1", "-c", sql],
         capture_output=True, text=True)
     if out.returncode != 0:

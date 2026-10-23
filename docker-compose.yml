@@ -1,0 +1,120 @@
+# The whole stack, one command:
+#
+#     docker compose up
+#
+# Brings up Postgres, applies the three client-system schemas, loads the
+# synthetic seed, mints scoped keys, and serves the console on :3200. Nothing
+# here needs an AWS account, an API key or the internet.
+#
+# `make up && make web` is the same thing without containers, for when you want
+# a hot-reloading console.
+
+name: claimsense
+
+services:
+  db:
+    image: postgres:16
+    container_name: claimsense-db
+    environment:
+      POSTGRES_USER: claimsense
+      POSTGRES_PASSWORD: claimsense
+      POSTGRES_DB: claimsense
+    ports:
+      # 5433, not 5432: the Meridian reference stack binds 5432 and both are
+      # often up at once.
+      - "5433:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U claimsense"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  # One-shot. Applies schema + api + seed, then exits 0. Everything downstream
+  # waits on it COMPLETING rather than on the database merely being reachable —
+  # a web container that starts against an empty schema 500s on every page and
+  # looks like a code bug.
+  #
+  # IDEMPOTENT BY GUARD, not by SQL. schema.sql opens with DROP SCHEMA CASCADE,
+  # which is right for a fresh load and catastrophic on a re-run: compose
+  # re-runs this service for anything that depends on it, so
+  # `docker compose run agent` was silently re-seeding and taking the minted
+  # API keys with it — the agent then failed with 401 against a stack that was
+  # plainly healthy. The guard below makes a second `up` a no-op.
+  #
+  # Force a rebuild with:  FORCE_SEED=1 docker compose up seed
+  seed:
+    image: postgres:16
+    container_name: claimsense-seed
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      PGPASSWORD: claimsense
+      FORCE_SEED: "${FORCE_SEED:-0}"
+    volumes:
+      - ./platform/db:/sql:ro
+    entrypoint: ["bash", "-c"]
+    command:
+      - |
+        set -e
+        if [ "$${FORCE_SEED:-0}" != "1" ] && \
+           psql -h db -U claimsense -d claimsense -tAc \
+             "SELECT to_regclass('cms.claims') IS NOT NULL" 2>/dev/null | grep -q '^t$'; then
+          n=$$(psql -h db -U claimsense -d claimsense -tAc "SELECT count(*) FROM cms.claims")
+          echo "==> already seeded ($$n claims) — skipping."
+          echo "    Re-seed with: FORCE_SEED=1 docker compose up seed"
+          exit 0
+        fi
+        echo "==> applying schema.sql (cms · pas · dms)"
+        psql -h db -U claimsense -d claimsense -q -v ON_ERROR_STOP=1 -f /sql/schema.sql
+        echo "==> applying api.sql (platform)"
+        psql -h db -U claimsense -d claimsense -q -v ON_ERROR_STOP=1 -f /sql/api.sql
+        echo "==> loading the synthetic seed"
+        psql -h db -U claimsense -d claimsense -q -v ON_ERROR_STOP=1 -f /sql/seed/seed.sql
+        echo "==> seeded"
+    restart: "no"
+
+  web:
+    build:
+      context: ./platform/web
+    container_name: claimsense-web
+    depends_on:
+      seed:
+        condition: service_completed_successfully
+    environment:
+      CLAIMSENSE_DB_URL: postgresql://claimsense:claimsense@db:5432/claimsense
+      PORT: "3200"
+    ports:
+      - "3200:3200"
+
+  # Not started by `up` — it is a job, not a service. Run one claim with:
+  #
+  #     docker compose run --rm agent run --claim 4409 --mock
+  #
+  # or the whole gate with:
+  #
+  #     docker compose run --rm agent eval --suite smoke --min-pass 0.9 --mock
+  agent:
+    build:
+      context: ./agent
+    container_name: claimsense-agent
+    profiles: ["agent"]
+    depends_on:
+      web:
+        condition: service_healthy
+    environment:
+      CLAIMSENSE_DB_URL: postgresql://claimsense:claimsense@db:5432/claimsense
+      CMS_BASE_URL: http://web:3200/api/cms/v1
+      PAS_BASE_URL: http://web:3200/api/pas/v1
+      DMS_BASE_URL: http://web:3200/api/dms/v1
+      CLAIMSENSE_CONSOLE_URL: http://localhost:3200
+    env_file:
+      # Credentials, if you have them. Optional by design — the default path is
+      # the mock brain and needs nothing.
+      - path: ./keys.env
+        required: false
+
+volumes:
+  pgdata:

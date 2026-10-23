@@ -1,0 +1,142 @@
+# The merge button is a test, and the push button is a bigger one.
+#
+# The milestone requirement is that a failing evaluation gate BLOCKS THE IMAGE
+# PUSH. That is expressed structurally rather than by a conditional: the
+# build-and-push job declares `needs: [eval, test]`, so GitHub Actions will not
+# schedule it at all when either fails. There is no step inside the push job
+# that could be reordered, commented out, or skipped with continue-on-error.
+#
+# Everything here runs on the MOCK brain: no AWS account, no API key, no
+# network, $0. Mock is not a stand-in for CI — mock IS the CI brain, which is
+# what makes the gate reproducible and what stops a milestone ever depending
+# on someone's quota.
+
+name: eval-gate
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  REGISTRY: ghcr.io
+
+jobs:
+  # ---------------------------------------------------------------- unit ----
+  test:
+    name: unit tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install test deps
+        run: python -m pip install --quiet "pytest>=8.0"
+      - name: pytest
+        working-directory: agent
+        # The backend-parity tests skip themselves when the live stack is not
+        # up, which it is not here. They run in the integration job below.
+        run: PYTHONPATH=src python -m pytest -q
+
+  # ---------------------------------------------------------------- gate ----
+  eval:
+    name: eval gate (20 cases, min-pass 0.9)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Smoke eval — the M2 gate
+        working-directory: agent
+        run: |
+          PYTHONPATH=src python -m claimsense_agent eval \
+            --suite smoke --min-pass 0.9 --mock
+
+      # Separate step so a guardrail regression is distinguishable from a
+      # general accuracy dip in the Actions UI. Zero adversarial failures are
+      # tolerated — averaging a safety failure away against nineteen easy
+      # passes is exactly how a guardrail regression ships.
+      - name: Golden gate — zero adversarial failures
+        working-directory: agent
+        run: |
+          PYTHONPATH=src python -m claimsense_agent eval \
+            --suite golden --min-pass 0.95 --mock
+
+      - name: The blocked case must still block
+        working-directory: agent
+        run: |
+          set -o pipefail
+          PYTHONPATH=src NO_COLOR=1 python -m claimsense_agent run \
+            --claim 4401 --mock --tripwire | tee /tmp/tripwire.txt
+          grep -q "OUTPUT BLOCKED" /tmp/tripwire.txt \
+            || { echo "::error::the citation tripwire did not fire"; exit 1; }
+          grep -q "citation_tripwire" /tmp/tripwire.txt \
+            || { echo "::error::the tripwire did not appear in guardrails_fired"; exit 1; }
+
+  # --------------------------------------------------------- integration ----
+  # Brings the real stack up and runs the agent against the three HTTP
+  # contracts. This is what catches mock/live drift — the keywords column that
+  # existed in the fixture and not in the schema passed every unit test.
+  integration:
+    name: live stack parity
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Bring up db + seed + console
+        run: docker compose up -d --wait db seed web
+      - name: Install agent deps
+        run: python -m pip install --quiet "pytest>=8.0" "requests>=2.31" "psycopg[binary]>=3.1"
+      - name: Mint scoped keys
+        run: python platform/db/mint_keys.py
+      - name: Fixture and live must agree
+        working-directory: agent
+        env:
+          CMS_BASE_URL: http://localhost:3200/api/cms/v1
+          PAS_BASE_URL: http://localhost:3200/api/pas/v1
+          DMS_BASE_URL: http://localhost:3200/api/dms/v1
+        run: PYTHONPATH=src python -m pytest tests/test_backend_parity.py -q
+      - name: Show the logs on failure
+        if: failure()
+        run: docker compose logs --tail 80
+
+  # ----------------------------------------------------------- the push ----
+  # needs: [test, eval, integration] is the gate. Not a step, not an `if` —
+  # a dependency, so a red gate means this job never runs at all.
+  build-and-push:
+    name: build and push images
+    needs: [test, eval, integration]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - image: claimsense-agent
+            context: ./agent
+          - image: claimsense-web
+            context: ./platform/web
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.context }}
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ github.repository }}/${{ matrix.image }}:latest
+            ${{ env.REGISTRY }}/${{ github.repository }}/${{ matrix.image }}:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

@@ -4,7 +4,8 @@
 # this twice leaves exactly the same data rather than doubling it.
 set -euo pipefail
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PSQL=(docker compose -f "$HERE/docker-compose.yml" exec -T claimsense-db
+REPO="$(cd "$HERE/../.." && pwd)"
+PSQL=(docker compose -f "$REPO/docker-compose.yml" exec -T db
       psql -U claimsense -d claimsense -q -v ON_ERROR_STOP=1)
 
 echo "==> regenerating the synthetic seed"
