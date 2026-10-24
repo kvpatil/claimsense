@@ -18,8 +18,13 @@ COMPOSE  := docker compose
 # only `make test` genuinely needs pytest installed.
 PY       := $(shell [ -x agent/.venv/bin/python ] && echo agent/.venv/bin/python || echo python3)
 
+# week3 (default) | week4. Gates the write-back and the adjuster confirm
+# control — see agent/src/claimsense_agent/stage.py.
+STAGE    ?= week3
+
 export CLAIMSENSE_DB_URL      := $(DB_URL)
 export CLAIMSENSE_CONSOLE_URL := $(CONSOLE)
+export CLAIMSENSE_STAGE       := $(STAGE)
 
 .PHONY: help setup up seed keys web web-dev agent serve tripwire eval golden test verify venv show-sdk doctor reset down clean
 
@@ -106,6 +111,7 @@ venv: ## create the agent venv and install dev deps (needs uv)
 doctor: ## check prerequisites and report what is missing
 	@echo "docker : $$(docker --version 2>/dev/null || echo MISSING)"
 	@echo "agent  : $(PY)"
+	@echo "stage  : $(STAGE)$(if $(filter week3,$(STAGE)), (write-back and confirm control gated off),)"
 	@echo "node   : $$(node -v 2>/dev/null || echo MISSING)"
 	@echo "python : $$(python3 -V 2>/dev/null || echo MISSING)"
 	@echo "db     : $$($(COMPOSE) exec -T db pg_isready -U claimsense 2>/dev/null || echo 'not running — make up')"

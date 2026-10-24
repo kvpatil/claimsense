@@ -6,9 +6,10 @@ import os
 import sys
 
 from . import brain as brain_mod
+from . import stage
 from .pipeline import print_scorecard, run_pipeline
 from .systems import ClaimsData, SystemError_
-from .trace import DIM, GREY, RESET, Tracer, banner, okline
+from .trace import DIM, GREY, RESET, Tracer, banner, okline, warnline
 
 
 def _add_common(p: argparse.ArgumentParser) -> None:
@@ -31,7 +32,8 @@ def main(argv: list[str] | None = None) -> int:
     run.add_argument("--claim", required=True)
     run.add_argument("--write", action="store_true",
                      help="land the recommendation in the claims system "
-                          "(requires --live and scoped keys)")
+                          "(Week 4 scope — needs CLAIMSENSE_STAGE=week4, "
+                          "--live and scoped keys)")
     run.add_argument("--tripwire", action="store_true",
                      help="force an uncited money-moving conclusion so the "
                           "output guardrail can be seen to block it")
@@ -79,6 +81,14 @@ def main(argv: list[str] | None = None) -> int:
     from .systems import load_env
     load_env()
 
+    # Resolve the stage up front so a typo fails here, with its own message,
+    # rather than surfacing later as a confusing refusal.
+    try:
+        stage.current()
+    except stage.UnknownStage as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return 2
+
     cfg = brain_mod.detect(force_mock=args.mock or not args.live)
     try:
         data = ClaimsData(mock=not args.live)
@@ -112,11 +122,26 @@ def main(argv: list[str] | None = None) -> int:
         except SystemError_ as exc:
             print(f"error: {exc}", file=sys.stderr)
             return 2
+        # The write is gated, the RUN is not. Refusing the whole run would
+        # make the stage flag feel like breakage — the pipeline worked, and
+        # the scorecard is exactly what Week 3 is meant to produce. Only the
+        # step that reaches into Northwind's workflow is withheld.
+        write_refused = None
         if args.write:
-            from .writeback import record_run, write_back
-            write_back(data, result, tracer=tracer)
-            record_run(data, result)
+            if stage.integration_enabled():
+                from .writeback import record_run, write_back
+                write_back(data, result, tracer=tracer)
+                record_run(data, result)
+            else:
+                write_refused = stage.refusal("--write")
+
         print_scorecard(result, tracer)
+
+        if write_refused:
+            print()
+            for line in write_refused.splitlines():
+                warnline(line)
+            return 3
         if args.write and not data.mock:
             console = os.environ.get("CLAIMSENSE_CONSOLE_URL",
                                      "http://localhost:3200")

@@ -12,12 +12,22 @@ is put together.
 |---|---|---|
 | 1 | Statement of work — scope, acceptance criteria, IP and data handling, five-week timeline | [`SOW.md`](SOW.md) |
 | 2 | Architecture diagram — every data flow labelled, the deterministic/model boundary marked | [`architecture.svg`](architecture.svg) · [`ARCHITECTURE.md`](../ARCHITECTURE.md) |
+| 2a | Target-state walkthrough — value stream → stage → workflow → role → value recipient | `northwind_week3_target_state.html` *(parent folder)* |
 | 3 | Pricing model with assumptions stated | [`PRICING.md`](PRICING.md) |
 | 4 | Risk register — five risks with likelihood, impact and mitigation | [`RISK_REGISTER.md`](RISK_REGISTER.md) |
 | 5 | Typed contracts for all three client systems, with idempotency rules | [`../CONTRACTS.md`](../CONTRACTS.md) · [`../openapi/`](../openapi/) |
 | 6 | Synthetic data shapes for claims, policies and documents | [`DATA_SHAPES.md`](DATA_SHAPES.md) |
 
 ---
+
+## On the target-state page
+
+`northwind_week3_target_state.html` renders the same map as a navigable page
+and is the natural companion to this architecture. It carries a scope banner
+saying plainly that it shows the end state **after Week 4 integration** —
+Week 3 delivers the capability standalone, with no portal integration and no
+MCP. Read it as the target design, which is what Week 2 is for, not as a
+statement of what Week 3 ships.
 
 ## The decision that shapes the architecture
 

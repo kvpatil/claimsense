@@ -176,7 +176,7 @@ TL=$(psql_ -c "SELECT count(*) FROM cms.claims
                 WHERE acv_cents IS NOT NULL
                   AND claimed_amount_cents::numeric / acv_cents >= 0.75;")
 OVER=$(psql_ -c "SELECT count(*) FROM cms.claims WHERE claimed_amount_cents > 2500000;")
-printf "  %-44s %s\n" "Total losses (damage >=75%% of cash value)" "$TL"
+printf "  %-44s %s\n" "Total losses (damage >=75% of cash value)" "$TL"
 printf "  %-44s %s\n" "Claims over an adjuster's \$25,000 authority" "$OVER"
 note "Each of those is a handoff: re-read the file, re-establish the"
 note "facts, wait in another queue. The adjuster who opens it first"

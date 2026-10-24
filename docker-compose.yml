@@ -86,6 +86,10 @@ services:
     environment:
       CLAIMSENSE_DB_URL: postgresql://claimsense:claimsense@db:5432/claimsense
       PORT: "3200"
+      # Default week3, so the containerised portal shows a recommendation
+      # without an adjuster being able to act on it. Override on the host:
+      #   CLAIMSENSE_STAGE=week4 docker compose up -d --wait web
+      CLAIMSENSE_STAGE: "${CLAIMSENSE_STAGE:-week3}"
     ports:
       - "3200:3200"
 
@@ -106,6 +110,7 @@ services:
         condition: service_healthy
     environment:
       CLAIMSENSE_DB_URL: postgresql://claimsense:claimsense@db:5432/claimsense
+      CLAIMSENSE_STAGE: "${CLAIMSENSE_STAGE:-week3}"
       CMS_BASE_URL: http://web:3200/api/cms/v1
       PAS_BASE_URL: http://web:3200/api/pas/v1
       DMS_BASE_URL: http://web:3200/api/dms/v1

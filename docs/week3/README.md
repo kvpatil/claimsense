@@ -139,8 +139,36 @@ may confirm, the code-versus-judgment breakdown, the checks and the spans.
 
 ---
 
-## Not yet done — Week 4
+## Not in Week 3 scope
 
-The recommendation reaching Northwind's Claims Desk, the confirm/override
-control in front of an adjuster, and the two-adjuster confirmation test. The
-write-back path exists and is tested; wiring it into the queue is Week 4.
+Week 3 delivers the capability **standalone**. These put ClaimSense inside
+Northwind's workflow and belong to Week 4:
+
+| | |
+|---|---|
+| Recommendations reaching an adjuster in Claims Desk | the write-back into the claims management system |
+| The confirm / override control | a licensed adjuster acting on a recommendation |
+| The two-adjuster confirmation test | the Week 4 acceptance gate |
+| **MCP** | the governed door for tool access — W16 |
+| Identity and RBAC at the integration boundary | OAuth2 on-behalf-of, scoped per seat |
+
+### Two of those are built early, and gated
+
+The write-back (`--write`) and the portal's confirm control **exist and are
+tested**. They are held behind `CLAIMSENSE_STAGE`, which defaults to `week3`:
+
+```bash
+make agent CLAIM=4414                     # the Week 3 deliverable
+… run --claim 4414 --live --mock --write  # refused, naming the variable
+CLAIMSENSE_STAGE=week4 … --write          # the Week 4 path
+```
+
+At `week3` the portal shows a recommendation with a note where the confirm
+control will be, rather than hiding it — an absent control reads as a missing
+feature; a labelled one reads as a scope boundary.
+
+Building something early is not a reason to claim it in the wrong week. See
+[`../../agent/src/claimsense_agent/stage.py`](../../agent/src/claimsense_agent/stage.py).
+
+**Working a claim by hand is unaffected in every stage** — that is the Week 1
+capability and it must keep working.

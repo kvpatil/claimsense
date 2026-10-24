@@ -3,7 +3,8 @@ import { Page, Crumb, Panel } from "@/components/Chrome";
 import { OutcomeBadge, SourceBadge, ConfirmBadge } from "@/components/Badges";
 import { getAdjusters, getClaimBundle, getClauses, getDesks } from "@/lib/queries";
 import { usd, shortDate, titleCase } from "@/lib/format";
-import { VENDOR } from "@/lib/client";
+import { CLIENT, VENDOR } from "@/lib/client";
+import { integrationEnabled } from "@/lib/stage";
 import ConfirmPanel from "./ConfirmPanel";
 import ManualDecisionPanel from "./ManualDecisionPanel";
 
@@ -322,7 +323,24 @@ export default async function Workbench({ params }) {
                 )}
 
                 <div className="pt-3 border-t border-line">
-                  <ConfirmPanel decision={latest} adjusters={adjusters} />
+                  {integrationEnabled() ? (
+                    <ConfirmPanel decision={latest} adjusters={adjusters} />
+                  ) : (
+                    /* Labelled, not hidden. An absent control reads as a
+                       missing feature; a named one reads as a scope boundary,
+                       and a reviewer can tell which week they are looking at. */
+                    <div className="rounded-lg bg-note px-4 py-3 text-sm">
+                      <p className="text-ink font-medium">
+                        Confirmation arrives with Week 4 integration.
+                      </p>
+                      <p className="text-muted mt-1 leading-relaxed">
+                        {VENDOR.product} has produced this recommendation, but
+                        it is not yet wired into {CLIENT.system}. Week 3
+                        delivers the capability standalone — an adjuster cannot
+                        act on it from here yet.
+                      </p>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
