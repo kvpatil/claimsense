@@ -12,15 +12,22 @@ ENV PYTHONUNBUFFERED=1 \
 
 WORKDIR /app
 
-# Dependencies first, so a source edit does not invalidate the layer.
+# The extras are named here; the PACKAGES are named only in pyproject.toml.
+# Repeating the list in this file is how psycopg came to be installed in three
+# places and declared in none.
+#
+# An editable install needs src/ present, so it lands after the copy rather
+# than before it — a source edit now re-runs pip. That costs rebuild time and
+# buys a single source of truth, which is the better trade for an image that
+# is built in CI rather than in the inner loop (`make verify` runs against
+# agent/.venv and never touches Docker).
 COPY pyproject.toml ./
-# The live extras: HTTP to the three client systems, Postgres for telemetry,
-# and the Agents SDK. Installed in the image so `--live` works out of the box,
-# but nothing on the default path imports them.
-RUN pip install --no-cache-dir --quiet \
-      "requests>=2.31" "psycopg[binary]>=3.1" "pytest>=8.0"
-
 COPY src/ ./src/
+# live = requests + psycopg (the three client systems, and the write-back).
+# llm  = the Agents SDK over LiteLLM. In the image so `--live` works out of
+#        the box, but nothing on the default path imports it.
+# dev  = pytest, so the suite can run inside the container.
+RUN pip install --no-cache-dir --quiet -e '.[live,llm,dev]'
 COPY data/ ./data/
 COPY tests/ ./tests/
 

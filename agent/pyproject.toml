@@ -1,7 +1,7 @@
 [project]
 name = "claimsense-agent"
 version = "0.1.0"
-description = "ClaimSense — claims adjudication co-pilot (OpenAI Agents SDK)"
+description = "ClaimSense — the claims adjudication workflow, automated (OpenAI Agents SDK)"
 requires-python = ">=3.11"
 license = { text = "MIT" }
 
@@ -13,8 +13,12 @@ license = { text = "MIT" }
 dependencies = []
 
 [project.optional-dependencies]
-# Live Postgres / HTTP path against the three client systems.
-live = ["requests>=2.31"]
+# Live path: HTTP to the three client systems, Postgres for the decision
+# write-back and run telemetry. psycopg belongs here and was missing — it is a
+# real import (writeback.py), but every path that runs it happened to install
+# it by hand, so `pip install -e '.[live]'` produced a venv where the
+# write-back died on import and nothing caught it.
+live = ["requests>=2.31", "psycopg[binary]>=3.1"]
 # Real agents. Imported only when a key is present AND --mock was not passed.
 llm = ["openai-agents>=0.2", "litellm>=1.50", "boto3>=1.34"]
 dev = ["pytest>=8.0"]

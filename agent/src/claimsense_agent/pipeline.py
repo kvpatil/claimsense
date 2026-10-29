@@ -17,6 +17,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from typing import Any
 
+from .brain import BrainConfig
 from .agents import adjudicator as adjudicator_agent
 from .agents import coverage as coverage_agent
 from .agents import evidence as evidence_agent
@@ -32,8 +33,17 @@ from .trace import (BOLD, CYAN, DIM, GREEN, GREY, MAGENTA, RED, RESET, YELLOW,
 
 
 def run_pipeline(data: ClaimsData, claim_id: int | str, *, tracer: Tracer,
-                 brain: str = "mock", now: datetime | None = None,
+                 brain: "BrainConfig | str" = "mock",
+                 now: datetime | None = None,
                  tripwire_demo: bool = False) -> RunResult:
+    """Work one claim end to end.
+
+    `brain` accepts either a BrainConfig — in which case a non-mock config
+    routes the three judgment stages through the OpenAI Agents SDK — or a
+    bare string, which is the mock path with that string as its label. The
+    string form is what the eval gate and the tests use: $0, no network, and
+    the SDK packages never imported.
+    """
     # The fixture pins its own "now" so evals cannot start failing on a
     # calendar. The live path has no such anchor and uses the real clock.
     if now is None and data.mock and data.reference_now:
@@ -122,10 +132,38 @@ def run_pipeline(data: ClaimsData, claim_id: int | str, *, tracer: Tracer,
                 kind="code", name="total-loss test", detail=tl.reason,
                 evidence=[f"acv={money.usd(claim.get('acv_cents'))}"]))
 
+    # ---- who reasons -------------------------------------------------------
+    # The ONLY branch in this function. Everything downstream of it — the
+    # guardrails, the risk interpretation, the adjudication, the override, the
+    # routing, the checks and the scorecard — runs identically whichever brain
+    # produced the three stage outputs. That invariant is the architectural
+    # claim; it is worth it being literally true rather than approximately so.
+    cfg = None if isinstance(brain, str) else brain
+    stage_brains: dict[str, str] = {}
+    triage = ev = cvg = None
+    retriever: Retriever | None = None
+
+    if cfg is not None and not cfg.is_mock:
+        import asyncio
+
+        from .agents.sdk_runtime import run_live_stages
+        sdk_state: dict[str, Any] = {}
+        sr = asyncio.run(run_live_stages(
+            data, claim_id, cfg=cfg, tracer=tracer, state=sdk_state, now=now,
+            governing_limit_cents=cov["limit_cents"] if cov else None))
+        triage, ev, cvg = sr.triage, sr.evidence, sr.coverage
+        stage_brains = dict(sr.brains)
+        # Reuse the retriever the agents searched through, so the trace below
+        # resolves clause titles from the same corpus the citations came from.
+        retriever = sdk_state.get("retriever")
+
     # ---- 1. TRIAGE ---------------------------------------------------------
     with tracer.span("triage_agent.classify", kind="agent") as t:
-        triage = triage_agent.run(bundle, now=now,
-                                  governing_limit_cents=cov["limit_cents"] if cov else None)
+        if triage is None:
+            triage = triage_agent.run(
+                bundle, now=now,
+                governing_limit_cents=cov["limit_cents"] if cov else None)
+            stage_brains["triage"] = "mock"
         t.kv("peril / product", f"{triage.peril} on {triage.product}")
         t.kv("severity", triage.severity)
         col = {"BREACHED": RED, "RED": RED, "AMBER": YELLOW, "GREEN": GREEN}[triage.clock_status]
@@ -141,7 +179,9 @@ def run_pipeline(data: ClaimsData, claim_id: int | str, *, tracer: Tracer,
 
     # ---- 2. EVIDENCE (input guardrail fires here) --------------------------
     with tracer.span("evidence_agent.gather", kind="agent") as t:
-        ev = evidence_agent.run(bundle)
+        if ev is None:
+            ev = evidence_agent.run(bundle)
+            stage_brains["evidence"] = "mock"
         for s in ev.source_systems:
             t.event(f"read {s}", level="tool")
         t.kv("systems answered", f"{ev.system_count}/3 "
@@ -173,8 +213,17 @@ def run_pipeline(data: ClaimsData, claim_id: int | str, *, tracer: Tracer,
 
     # ---- 3. COVERAGE (retrieval + output guardrail) ------------------------
     with tracer.span("coverage_agent.decide", kind="agent") as t:
-        retriever = Retriever(data.get_clauses())
-        cvg = coverage_agent.run(bundle, retriever, force_uncited=tripwire_demo)
+        retriever = retriever or Retriever(data.get_clauses())
+        if cvg is None:
+            cvg = coverage_agent.run(bundle, retriever,
+                                     force_uncited=tripwire_demo)
+            stage_brains["coverage"] = "mock"
+        elif tripwire_demo:
+            # --tripwire must demonstrate the guardrail on BOTH brains. A
+            # model cannot be reliably instructed to misbehave on cue, so the
+            # citations are stripped here instead — the tripwire then sees
+            # exactly what it would see from a model that cited nothing.
+            cvg.cited_clause_ids = []
 
         with tracer.span("retrieval: BM25 over the clause corpus", kind="retrieval") as r:
             r.kv("retrieved", f"{len(cvg.retrieved_clause_ids)} clause(s)")
@@ -219,7 +268,8 @@ def run_pipeline(data: ClaimsData, claim_id: int | str, *, tracer: Tracer,
     with tracer.span("adjudicator.decide", kind="agent") as t:
         verdict = adjudicator_agent.run(
             triage=triage, evidence=ev, coverage=cvg, risk=rsk,
-            eligibility=elig, settlement=settlement, basis=basis)
+            eligibility=elig, settlement=settlement, basis=basis,
+            fell_back=[k for k, v in stage_brains.items() if v == "fallback"])
 
         # A blocked coverage opinion cannot support an outcome that rests on
         # it. Fail closed: the claim goes to a human rather than proceeding on
@@ -286,12 +336,34 @@ def run_pipeline(data: ClaimsData, claim_id: int | str, *, tracer: Tracer,
         t.kv("desk", verdict.routing.desk if verdict.routing else "—")
 
     result = RunResult(
-        claim_id=int(claim["claim_id"]), trace_id=tracer.trace_id, brain=brain,
+        claim_id=int(claim["claim_id"]), trace_id=tracer.trace_id,
+        brain=_brain_label(brain, stage_brains),
         triage=triage, evidence=ev, coverage=cvg, risk=rsk, verdict=verdict,
         duration_ms=tracer.total_ms(), guardrails_fired=guardrails_fired,
+        stage_brains=stage_brains,
     )
     result.checks = _build_checks(result, elig, settlement)
     return result
+
+
+def _brain_label(brain: BrainConfig | str, stage_brains: dict[str, str]) -> str:
+    """What actually reasoned — not what was configured.
+
+    This used to be `cfg.mode`, which meant a --live run with credentials
+    present printed `brain=llm` over numbers the mock reasoners had produced.
+    A run that succeeds while misreporting its own provenance is worse than
+    one that fails, so the label is derived from the stage record instead.
+    """
+    if isinstance(brain, str):
+        return brain
+    if brain.is_mock:
+        return "mock"
+    fell = [k for k, v in stage_brains.items() if v != "model"]
+    if not fell:
+        return "llm"
+    if len(fell) == len(stage_brains):
+        return "mock (every stage fell back)"
+    return f"llm (partial: {', '.join(fell)} fell back)"
 
 
 def _build_checks(r: RunResult, elig, settlement) -> list[tuple[str, bool, str]]:
@@ -316,6 +388,12 @@ def _build_checks(r: RunResult, elig, settlement) -> list[tuple[str, bool, str]]
          (v.settlement_cents is None) == (v.outcome != "APPROVE"),
          money.usd(v.settlement_cents)),
         ("human confirmation required", v.requires_human_confirmation, "always"),
+        ("every judgment stage recorded its brain",
+         set(r.stage_brains) == {"triage", "evidence", "coverage"},
+         # Compact on purpose — the scorecard truncates the note column, and
+         # "model, fallback" is the fact that matters. stage_brains carries
+         # the per-stage detail for anything that needs it.
+         ", ".join(sorted(set(r.stage_brains.values()))) or "none"),
         ("routed to a named desk", bool(v.routing and v.routing.desk),
          v.routing.desk if v.routing else "—"),
         ("settlement within the desk's authority",

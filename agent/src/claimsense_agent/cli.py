@@ -117,7 +117,7 @@ def main(argv: list[str] | None = None) -> int:
             print(f"{DIM}            watch the output guardrail block it.{RESET}\n")
         tracer = Tracer()
         try:
-            result = run_pipeline(data, args.claim, tracer=tracer, brain=cfg.mode,
+            result = run_pipeline(data, args.claim, tracer=tracer, brain=cfg,
                                   tripwire_demo=args.tripwire)
         except SystemError_ as exc:
             print(f"error: {exc}", file=sys.stderr)

@@ -91,7 +91,11 @@ def _result_payload(result, cfg, tracer) -> dict:
         "ok": True,
         "claim_id": result.claim_id,
         "trace_id": result.trace_id,
+        # result.brain is what REASONED; cfg.describe() is what was
+        # configured. They differ when a stage fell back, and the UI needs the
+        # first one to be the headline.
         "brain": result.brain,
+        "stage_brains": result.stage_brains,
         "model": cfg.describe(),
         "duration_ms": round(result.duration_ms, 1),
         "narrative": v.rationale,
@@ -200,9 +204,13 @@ class Handler(BaseHTTPRequestHandler):
             return self._json(400, {"ok": False, "error": "claim_id is required"})
 
         use_live_data = bool(body.get("live_data"))
-        force_mock = not bool(body.get("live_brain"))
         tripwire = bool(body.get("tripwire"))
 
+        # The server's own --mock is a FLOOR, not a default the browser can
+        # talk its way past. This used to be harmless because the live brain
+        # changed nothing; now it spends real money, and a page left open on a
+        # mock-started server must not be able to bill the client's account.
+        force_mock = self.server.force_mock or not bool(body.get("live_brain"))
         cfg = detect(force_mock=force_mock)
         try:
             data = ClaimsData(mock=not use_live_data)
@@ -215,7 +223,7 @@ class Handler(BaseHTTPRequestHandler):
         seat_id = body.get("seat")
         tracer = Tracer(quiet=True)
         try:
-            result = run_pipeline(data, claim_id, tracer=tracer, brain=cfg.mode,
+            result = run_pipeline(data, claim_id, tracer=tracer, brain=cfg,
                                   tripwire_demo=tripwire)
         except SystemError_ as exc:
             return self._json(404, {"ok": False, "error": str(exc)})

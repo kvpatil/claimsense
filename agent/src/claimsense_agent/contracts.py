@@ -2,9 +2,12 @@
 
 M2 asks for STRICT typed outputs. These are dataclasses rather than Pydantic
 models for one reason: the mock path has to run on the stdlib alone, and the
-Agents SDK accepts a dataclass as `output_type=` just as happily as a BaseModel.
-So the same type annotates the mock reasoner and constrains the real model —
-there is no second definition to keep in step.
+Agents SDK does accept a dataclass as `output_type=` just as happily as a
+BaseModel — verified against openai-agents 0.24.0, which routes it through
+pydantic's TypeAdapter, wraps it as {"response": {...}} and raises
+ModelBehaviorError when the model's JSON does not fit. So the same type
+annotates the mock reasoner and constrains the real model, and there is no
+second definition to keep in step.
 
 The vocabulary here is the contract between the pipeline, the database and the
 console. `Outcome` matches cms.decisions.outcome; `VerdictSource` matches
@@ -172,3 +175,8 @@ class RunResult:
     duration_ms: float
     guardrails_fired: list[str] = field(default_factory=list)
     checks: list[tuple[str, bool, str]] = field(default_factory=list)
+    # Which brain produced each judgment stage: "mock" | "model" | "fallback".
+    # `brain` above is a summary for the scorecard; this is the per-stage
+    # record it is derived from, and it is what lets a reviewer see that a run
+    # labelled llm had its coverage opinion written by the mock reasoner.
+    stage_brains: dict[str, str] = field(default_factory=dict)

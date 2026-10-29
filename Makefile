@@ -102,11 +102,22 @@ setup: ## one-time: config files + the agent venv
 #
 # Idempotent: uv venv refuses to overwrite, so create only when missing and
 # always (re)install. `make setup` calls this, and people re-run setup.
+# The package list lives in agent/pyproject.toml and nowhere else. It used to
+# be repeated here, in agent/Dockerfile and twice in the CI workflow — four
+# copies, which had already drifted: psycopg was installed by all of them and
+# declared by none, so `pip install -e '.[live]'` gave you a venv where the
+# write-back died on import.
 venv: ## create the agent venv and install dev deps (needs uv)
 	@cd agent && [ -x .venv/bin/python ] || uv venv --python 3.11 .venv
-	@cd agent && uv pip install --python .venv/bin/python --quiet \
-	    "pytest>=8.0" "requests>=2.31" "psycopg[binary]>=3.1"
+	@cd agent && uv pip install --python .venv/bin/python --quiet -e '.[live,dev]'
 	@echo "==> agent/.venv ready (pytest + live extras)"
+
+venv-llm: venv ## add the OpenAI Agents SDK, for `run --live` with a real model
+	@cd agent && uv pip install --python .venv/bin/python --quiet -e '.[live,llm,dev]'
+	@echo "==> agent/.venv ready (+ Agents SDK over LiteLLM)"
+	@echo "    tests/test_sdk_runtime.py now runs instead of skipping."
+	@echo "    'run --live' needs AWS credentials in keys.env to reach Bedrock;"
+	@echo "    without them each stage falls back and says so on the scorecard."
 
 doctor: ## check prerequisites and report what is missing
 	@echo "docker : $$(docker --version 2>/dev/null || echo MISSING)"

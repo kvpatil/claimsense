@@ -9,6 +9,34 @@ drafted explanation.
 Precedence is fixed and lives in code, because "a lapsed policy outranks a
 sympathetic narrative" is a business rule the client owns, not something that
 should vary with sampling.
+
+NOT AN AGENT, deliberately. This stage is the one that computes `source`, so
+putting a model here would erase the very distinction M2 asks to be visible —
+a model cannot be the judge of whether a model decided something. It also owns
+the precedence ladder, which the client signs off on and which must not vary
+between two runs of the same claim.
+
+There used to be an INSTRUCTIONS constant here, sitting unused beside
+deterministic code and reading like an agent that had quietly been switched
+off. For the record, this is what a model WOULD have been told had this been a
+judgment step, and `run` below implements exactly it:
+
+    You produce the FIRST DECISION on a claim, which a licensed adjuster will
+    confirm or override. You are not the decision-maker; you are the draft.
+    Produce exactly one outcome: APPROVE when cover is confirmed, the policy
+    was in force and nothing is outstanding; DENY when an exclusion applies or
+    there was no cover in force; MORE_INFO when the file cannot support a
+    decision — name the missing documents; SIU_REFERRAL when the fraud
+    indicators cross the referral threshold.
+
+    Precedence, in this order and not negotiable: no cover in force beats
+    everything; a fraud referral beats a coverage finding; an exclusion beats a
+    grant; missing evidence beats a favourable reading.
+
+    Carry the coverage agent's citations through verbatim. Add none of your own
+    and drop none. Write the rationale for the claimant's adjuster, not for an
+    engineer: three or four sentences, plain words, stating what the policy
+    says and what happens next.
 """
 from __future__ import annotations
 
@@ -17,30 +45,6 @@ from typing import Any
 from ..contracts import (ClaimVerdict, CoverageOpinion, DecisionBasis,
                          EvidenceBundle, RiskAssessment, TriageDecision)
 
-INSTRUCTIONS = """\
-You are the Adjudicating agent at ClaimSense. You produce the FIRST DECISION on \
-a claim, which a licensed adjuster will confirm or override. You are not the \
-decision-maker; you are the draft.
-
-You receive a triage classification, an evidence summary, a coverage finding \
-with its citations, and a fraud assessment. Produce exactly one outcome:
-
-  APPROVE       cover is confirmed, the policy was in force, and nothing is \
-outstanding
-  DENY          an exclusion applies, or there was no cover in force
-  MORE_INFO     the file cannot support a decision — name the missing documents
-  SIU_REFERRAL  the fraud indicators cross the referral threshold
-
-Precedence, applied in this order and not negotiable: no cover in force beats \
-everything; a fraud referral beats a coverage finding; an exclusion beats a \
-grant; missing evidence beats a favourable reading.
-
-Carry the coverage agent's citations through verbatim. Do not add citations of \
-your own and do not drop one.
-
-Write the rationale for the claimant's adjuster, not for an engineer: three or \
-four sentences, plain words, and state what the policy says and what happens \
-next."""
 
 
 def _ELIGIBILITY_CLAUSE(eligibility) -> str | None:
@@ -59,7 +63,8 @@ def _ELIGIBILITY_CLAUSE(eligibility) -> str | None:
 
 def run(*, triage: TriageDecision, evidence: EvidenceBundle,
         coverage: CoverageOpinion, risk: RiskAssessment, eligibility,
-        settlement, basis: list[DecisionBasis]) -> ClaimVerdict:
+        settlement, basis: list[DecisionBasis],
+        fell_back: list[str] | None = None) -> ClaimVerdict:
     claim_id = triage.claim_id
     cited = list(coverage.cited_clause_ids)
     settlement_cents = None
@@ -156,6 +161,15 @@ def run(*, triage: TriageDecision, evidence: EvidenceBundle,
             f"{coverage.statement} "
             + (f"{settlement.explain().capitalize()}. " if settlement else "")
             + "Subject to the adjuster's confirmation, this claim can be settled.")
+
+    # A stage whose model could not produce a valid typed output was answered
+    # by the deterministic reasoner instead. Whatever the ladder above decided,
+    # the result does not rest on a model judgment and must not be labelled
+    # one — the milestone asks for the two to be distinguishable, and the
+    # honest reading of a fallen-back coverage opinion is that no model
+    # concluded anything about cover.
+    if fell_back:
+        source = "deterministic_fallback"
 
     # Risk that did not reach referral still belongs in the file — an adjuster
     # confirming an approval should see that two indicators were noted.

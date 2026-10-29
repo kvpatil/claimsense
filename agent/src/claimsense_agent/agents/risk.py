@@ -8,25 +8,30 @@ as a disorganised claimant is judgment.
 
 The referral threshold is deterministic and this stage cannot talk it down. A
 model that finds the narrative convincing does not get to lower the score.
+
+NOT AN AGENT, deliberately. The score, the band and the referral are all
+arithmetic settled before this runs, and the prose below is a reading of a
+number rather than a reading of the file — so a fourth model call per claim
+would buy phrasing, not judgment. The three stages that ARE agents (triage,
+evidence, coverage) are the ones where a different reading changes the answer.
+
+For the record, this is what a model WOULD have been told had this been a
+judgment step, and `run` below implements exactly it:
+
+    You are given a fraud score and the indicators behind it, both computed
+    before you were called. You may not recompute the score and you may not
+    argue it down. Say in two or three sentences what this COMBINATION of
+    indicators amounts to, naming the ones you rely on. A single indicator is
+    usually noise; indicators that corroborate each other are not. Where there
+    is an innocent reading, say so — "reported late because the insured was
+    travelling" is a real explanation and the file should record that you
+    considered it. The referral decision is made by the threshold, not by you.
 """
 from __future__ import annotations
 
 from ..contracts import RiskAssessment
 from ..determinism.risk import RiskScore
 
-INSTRUCTIONS = """\
-You are the Risk agent at ClaimSense.
-
-You are given a fraud score and the indicators behind it, both computed before \
-you were called. You may not recompute the score and you may not argue it down.
-
-Say in two or three sentences what this COMBINATION of indicators amounts to, \
-naming the indicators you are relying on. A single indicator is usually noise; \
-indicators that corroborate each other are not. Where there is an innocent \
-reading, say so — "reported late because the insured was travelling" is a real \
-explanation and the file should record that you considered it.
-
-The referral decision is made by the threshold, not by you."""
 
 # What each indicator means to an experienced adjuster, in plain words. These
 # are the phrasings the assessment is built from so it reads as a judgment

@@ -19,12 +19,70 @@ make verify         # the $0 gate: eval + 308 tests
 
 | Milestone | Evidence |
 |---|---|
-| Agent set on the Agents SDK with strict typed outputs | `agent/src/claimsense_agent/agents/` · `contracts.py` · `make show-sdk` |
+| Agent set on the Agents SDK with strict typed outputs | `agents/sdk_runtime.py` · `contracts.py` · `make show-sdk` · [tests](../../agent/tests/test_sdk_runtime.py) |
 | Container build, single-command start | `docker compose up` · [`../../docker-compose.yml`](../../docker-compose.yml) |
 | Retrieval citing the clause ids actually retrieved | `search_policy_clauses` · [`01-normal-run.txt`](../evidence/01-normal-run.txt) |
 | CI where a failing eval gate blocks the image push | [`eval-gate.yml`](../../.github/workflows/eval-gate.yml) — `needs: [test, eval, integration]` |
 | All four outcomes, model verdicts distinguishable from fallback | [`05-eval-gate.txt`](../evidence/05-eval-gate.txt) |
 | **The blocked case, shown** | [`02-blocked-by-tripwire.txt`](../evidence/02-blocked-by-tripwire.txt) |
+
+---
+
+## Which brain runs
+
+Two brains, one pipeline. The branch is the only one in `run_pipeline`;
+everything downstream of it — the guardrails, the risk interpretation, the
+adjudication, the override, the routing, the checks and the scorecard — runs
+identically whichever brain produced the three stage outputs.
+
+| | `--mock` (the default) | `--live` with credentials |
+|---|---|---|
+| Who reasons | deterministic reasoners in `agents/*.py` | three `Agent`s on the OpenAI Agents SDK |
+| Cost | $0, no key, no network | real Bedrock spend |
+| Used by | CI, the eval gate, every milestone number | demos and the live-path evidence |
+
+```bash
+make venv-llm                              # installs the SDK extra
+#  then put AWS credentials in keys.env
+cd agent && .venv/bin/python -m claimsense_agent run --claim 4401 --live
+```
+
+**Three agents, not five.** Triage, Evidence and Coverage are the stages where
+a different reading changes the answer, so those are the agents. Risk and the
+adjudicator stay in code: the fraud score is arithmetic, and the adjudicator is
+the precedence ladder that *computes* `source` — a model there would erase the
+distinction M2 asks to be visible. Both module docstrings carry the prompt they
+would have had, and a test asserts neither carries a live one.
+
+**Not a handoff chain.** `build_agents` passes no `handoffs=`. The guardrails
+sit *between* the stages — quarantine on the Evidence output, the citation
+tripwire on the Coverage output — so the pipeline needs a validated typed
+result at every boundary, and a handoff chain yields only the last agent's
+`output_type`. One `SQLiteSession` per claim carries context across the three
+runs instead.
+
+**What the model is allowed to have decided.** Each stage's output is
+reconciled afterwards: the model keeps its judgment (peril, severity, finding,
+statement, citations, confidence) and code overwrites everything that was never
+its to set — the clock dates, the systems inventory, and above all
+`retrieved_clause_ids`, which is the allowlist the citation tripwire checks
+against. A model able to set its own allowlist could cite anything and the
+guardrail would wave it through. `test_sdk_runtime.py` asserts it cannot.
+
+**When the model cannot answer.** A stage whose output fails validation is
+retried once, then falls back to its deterministic reasoner — and the verdict
+is stamped `deterministic_fallback`, because a decision resting on a mock
+coverage opinion is not a model decision. The scorecard's `brain=` line reports
+what actually reasoned (`llm`, `llm (partial: coverage fell back)`, or `mock`),
+not what was configured. A non-retryable failure — bad credentials, an
+unavailable inference profile — fails the stage once rather than burning six
+round trips on a request that could never succeed.
+
+**Mock and live will not always agree.** The mock coverage reasoner is phrase
+matching and will miss a paraphrase it was not given; that divergence is
+information about the mock, not a live-path defect. The eval suites are
+asserted against `--mock` on purpose — a gate whose expectations move with a
+model is not a gate.
 
 ---
 

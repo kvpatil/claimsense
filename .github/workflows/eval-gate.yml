@@ -36,11 +36,24 @@ jobs:
         with:
           python-version: "3.11"
       - name: Install test deps
-        run: python -m pip install --quiet "pytest>=8.0"
+        # Extras, not a package list — agent/pyproject.toml is the only place
+        # versions are named.
+        #
+        # The llm extra is installed HERE, in the $0 job, on purpose:
+        # tests/test_sdk_runtime.py drives the real Agents SDK against a
+        # scripted model, so it needs the packages but spends nothing and
+        # needs no key. Without them those tests importorskip themselves —
+        # and a skipped test looks exactly like a passing one.
+        working-directory: agent
+        run: python -m pip install --quiet -e '.[llm,dev]'
       - name: pytest
         working-directory: agent
         # The backend-parity tests skip themselves when the live stack is not
         # up, which it is not here. They run in the integration job below.
+        # CLAIMSENSE_REQUIRE_SDK turns a missing Agents SDK into a failure
+        # rather than a silent skip of the live-path suite.
+        env:
+          CLAIMSENSE_REQUIRE_SDK: "1"
         run: PYTHONPATH=src python -m pytest -q
 
   # ---------------------------------------------------------------- gate ----
@@ -94,7 +107,8 @@ jobs:
       - name: Bring up db + seed + console
         run: docker compose up -d --wait db seed web
       - name: Install agent deps
-        run: python -m pip install --quiet "pytest>=8.0" "requests>=2.31" "psycopg[binary]>=3.1"
+        working-directory: agent
+        run: python -m pip install --quiet -e '.[live,dev]'
       - name: Mint scoped keys
         run: python platform/db/mint_keys.py
       - name: Fixture and live must agree
