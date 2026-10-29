@@ -192,9 +192,31 @@ note "The 'First decision' panel is an empty form. Outcome, clause"
 note "identifiers typed from memory, the payable amount worked out on"
 note "paper, and the letter written from scratch."
 echo
-AGED=$(psql_ -c "SELECT count(*) FROM cms.claims WHERE status='intake' AND reported_at < now() - interval '25 days';")
-printf "  %-34s %s\n" "Claims already past 25 days" "$AGED"
-note "Every one of those is accruing fair-claims exposure while it waits."
+# The seed pins the engagement's "now" (generate.py:42) and writes it into the
+# header of the SQL it generates, so read it from there. This used to measure
+# against wall-clock now(), which made a headline Week 1 number drift every day
+# the demo was not given: a month after the seed was built it had saturated to
+# "every claim in the book", which says nothing.
+#
+# The deadlines are the ones the system actually implements — 15 days to
+# acknowledge, 40 to decide. See determinism/clock.py.
+#
+# Measured from MIDNIGHT of the reference date. generate.py pins the instant at
+# 09:00 UTC and the agent's clock uses that, so one claim falls due inside those
+# nine hours and clock.py would count it where this does not. Stated rather than
+# silently absorbed, because the two numbers have to be explicable side by side.
+REF=$(grep -oE 'reference_date=[0-9]{4}-[0-9]{2}-[0-9]{2}' platform/db/seed/seed.sql \
+        | head -1 | cut -d= -f2)
+REF=${REF:-2026-10-01}
+LATE=$(psql_ -c "SELECT count(*) FROM cms.claims WHERE status='intake'
+                   AND reported_at + interval '15 days' < '$REF'::date;")
+BREACHED=$(psql_ -c "SELECT count(*) FROM cms.claims WHERE status='intake'
+                       AND reported_at + interval '40 days' < '$REF'::date;")
+printf "  %-44s %s\n" "Past the 15-day acknowledgement deadline" "$LATE"
+printf "  %-44s %s\n" "Past the 40-day decision deadline" "$BREACHED"
+note "Statutory unfair-claims deadlines, measured at the seed's own"
+note "reference date ($REF). Every one of those is accruing fair-claims"
+note "exposure while it waits, and nothing in the portal is counting them."
 
 step "Week 1 — what discovery found"
 printf "  ${BOLD}Three systems${RESET}  CMS, PAS, DMS — no adjuster sees a claim in one place\n"

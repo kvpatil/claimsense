@@ -40,7 +40,7 @@ worked out on paper.
 | **Two unsupported steps** | finding the governing clause, and computing what is payable — no system does either |
 | **Search that does not help** | searching the wording for "water" returns five clauses, two of which decide the claim and three of which are noise. Searching the claimant's own word, "leaking", returns **zero** — the form says "deterioration" |
 | **No citation trail** | nothing records which clause a decision rested on |
-| **The queue grows** | 56 of 60 claims already past 25 days |
+| **The queue grows** | 62 claims, none worked. **20** are already past the statutory 15-day acknowledgement deadline and one has breached the 40-day decision deadline |
 
 ---
 

@@ -10,7 +10,7 @@ an automated pipeline on the OpenAI Agents SDK, under change control.
 ```bash
 ./week3_demo.sh     # the full walkthrough
 make serve          # the agent's own test client on :8080
-make verify         # the $0 gate: eval + 220 tests
+make verify         # the $0 gate: eval + 308 tests
 ```
 
 ---

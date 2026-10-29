@@ -110,10 +110,11 @@ NOPAUSE=1 ./week1_demo.sh
 | Step | |
 |---|---|
 | 1 | Northwind's estate comes up |
-| 2 | **The queue** — 60 claims, none worked, the open exposure |
+| 2 | **The queue** — 62 claims, none worked, the open exposure |
 | 3 | **One claim, three systems** — what assembling claim 4414 actually takes |
 | 4 | **Searching the policy wording by hand** — the step with no real system behind it |
-| 5 | **Where the time goes** — the blank decision form, and the ageing queue |
+| 5 | **A claim is not worked by one person** — seven desks, and nothing works out which one a claim needs |
+| 6 | **Where the time goes** — the blank decision form, and the statutory clock already running |
 
 Step 4 is the one to watch. Searching the wording for **"water"** returns five
 clauses, of which two decide the claim and three are noise — and one is an
@@ -197,7 +198,7 @@ the claimant's own words), **4412** (a policy reference that does not resolve).
 
 | Command | |
 |---|---|
-| `make verify` | the **$0 gate** — prerequisites, eval, 220 tests |
+| `make verify` | the **$0 gate** — prerequisites, eval, 308 tests |
 | `make agent CLAIM=4414` | work one claim, traced |
 | `make tripwire` | the blocked case on its own |
 | `make eval` / `make golden` | the gates CI runs |

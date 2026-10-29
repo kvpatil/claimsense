@@ -250,7 +250,7 @@ Measured against the seeded queue, not estimated:
 | | | Means |
 |---|---|---|
 | **62** claims | in the queue | — |
-| **56** | already past 25 days | the decision clock is running on 90% of the book |
+| **20** | past the 15-day acknowledgement deadline | **32%** of the book is already late to acknowledge, and one claim has breached the 40-day decision deadline |
 | **27** | over an adjuster's $25,000 authority | **44% need W6 escalation** — a second desk |
 | **10** | total losses (damage ≥ 75% of ACV) | **16% need W4a** — an appraiser |
 | **2** | fraud score ≥ 70 | leave VS1 for VS2 entirely |
