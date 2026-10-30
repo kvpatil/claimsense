@@ -22,12 +22,13 @@ document is the Week 3 subset, and the difference is the scope boundary.
   └───────┬────────────────────────┬───────────────────────┬───────────────┘
         1 │                      2 │                     3 │   scoped key each
   ┌───────┴────────────────────────┴───────────────────────┴───────────────┐
-  │ INTEGRATION LAYER   authn · per-system scope · idempotency · audit     │
+  │ INTEGRATION LAYER   per-system scope · idempotency · audit             │
+  │                     (RBAC and OAuth2 on-behalf-of land in Week 4)      │
   └────────────────────────────────┬──────────────────────────────────────-┘
                                  4 │ one claim bundle
   ┌────────────────────────────────┴───────────────────────────────────────┐
   │ ▣ DETERMINISTIC — settled BEFORE anything reasons          (flow 5)    │
-  │   eligibility · clock · money · fraud score · access                   │
+  │   eligibility · clock · money · fraud score · seat rules               │
   │   no model in the path; test_boundary.py walks the AST to prove it     │
   ├────────────────────────────────────────────────────────────────────────┤
   │ ◆ MODEL JUDGMENT — strict typed output per stage      (flows 6-8,10-11) │
@@ -51,6 +52,15 @@ document is the Week 3 subset, and the difference is the scope boundary.
 The recommendation is **returned and traced, not persisted**. That is the
 boundary: Week 3 proves the capability; Week 4 puts it in someone's hands.
 
+**Access control in Week 3 is rules, not RBAC.**
+[`determinism/identity.py`](../../agent/src/claimsense_agent/determinism/identity.py)
+answers two questions in code — may this seat *see* this claim (`can_view`, by
+scope) and may it *confirm* a decision (`can_confirm`, which requires a
+licence). Both are evaluated against a seat the caller **asserts** with
+`--seat`. Nothing authenticates it. **RBAC proper — the boundary proving the
+seat via OAuth2 on-behalf-of — is Week 4.** The rules are here so that when
+real identity arrives there is something correct for it to feed.
+
 ---
 
 ## Flows
@@ -59,7 +69,7 @@ boundary: Week 3 proves the capability; Week 4 puts it in someone's hands.
 |---|---|---|
 | 1–3 | Agent → CMS / PAS / DMS, one scoped key each | ✅ |
 | 4 | Integration → pipeline, one claim bundle | ✅ |
-| 5 | Deterministic facts — dates, money, score, access | ✅ |
+| 5 | Deterministic facts — dates, money, score, seat rules | ✅ |
 | 6–8, 10–11 | Stage outputs, strict typed dataclasses | ✅ |
 | 9 | Coverage → clause corpus, retrieval set recorded | ✅ |
 | 12 | Pipeline → CMS, the recommendation | ✗ Week 4 |
@@ -109,3 +119,75 @@ regression. It exits non-zero on each, and `build-and-push` declares
 
 **Complete and verified.** 328 tests pass; `./week3_demo.sh` exits 0; the live
 Bedrock path runs under an EC2 instance role (`brain=llm`, `method=iam-role`).
+
+---
+
+## Sequence — one claim, end to end
+
+Traced off [`pipeline.py`](../../agent/src/claimsense_agent/pipeline.py); the
+section comments there match these steps in order.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Op as Operator (CLI / :8080)
+    participant P as Pipeline
+    participant CMS as CMS
+    participant PAS as PAS
+    participant DMS as DMS
+    participant D as Determinism (code)
+    participant T as Triage (Haiku)
+    participant E as Evidence (Haiku)
+    participant G as Guardrails
+    participant C as Coverage (SONNET)
+    participant BM as Clause corpus (BM25)
+    participant R as Risk (Haiku)
+    participant A as Adjudicator (code)
+
+    Op->>P: run --claim 4414
+    P->>CMS: claim, FNOL, notes, fraud signals
+    P->>PAS: policy, coverages
+    P->>DMS: documents, OCR text, is_poisoned
+    Note over P,DMS: three scoped keys, one per system. A CMS key at PAS gets 403.
+
+    P->>D: eligibility, clock, money, fraud score, seat rules
+    D-->>P: in force yes, payable 22750, score 0, total loss no
+    Note over D: BEFORE anything reasons. No model in this path.
+
+    P->>T: classify (TOLD the clock, not asked)
+    T-->>P: peril water on HO3, severity, clock GREEN
+    P->>E: gather evidence
+    E->>G: quarantine_poisoned (INPUT)
+    G-->>E: poisoned docs dropped before model context
+    E-->>P: 3 of 3 systems answered, file sufficient
+
+    P->>C: decide cover
+    C->>BM: search_policy_clauses, pre-filtered by product and peril
+    BM-->>C: 10 clauses, retrieval set RECORDED
+    C-->>P: covered, cites HO3-I-EXCL-3b
+    P->>G: citation_tripwire (OUTPUT)
+
+    alt every cited id was actually retrieved
+        G-->>P: grounded, proceed
+    else cited id not in the retrieval set
+        G-->>P: BLOCKED, not returned, not written back
+        Note over G,P: settlement becomes none, outcome MORE_INFO, goes to a human
+    end
+
+    P->>R: interpret the indicators
+    R-->>P: band low, cannot argue the score down
+    P->>A: decide, fixed precedence ladder
+    A->>G: determinism_override, pii_scan
+    G-->>A: model verdict consistent with the checks
+    A-->>P: APPROVE, source model, 22750
+    P->>D: settlement authority and routing
+    D-->>P: desk adjuster, within 25000 authority
+    P-->>Op: verdict, citations, scorecard 11 of 11
+
+    Note over P,Op: Week 3 STOPS here. Nothing is persisted.<br/>Flows 12-14 (write-back, console, confirm) are Week 4.
+```
+
+**The two beats worth pausing on.** Step 6 is the whole architecture: the facts
+are settled before any model runs, so the model is only ever *told* what the
+clock and the money say. The `alt` block is the control in front of the money —
+a claim that would have settled for $17,500 pays nothing and goes to a human.

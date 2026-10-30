@@ -117,3 +117,72 @@ Flows 12–14 built and tested behind the stage gate. MCP, boundary RBAC and the
 acceptance test remain. **No Week 4 brief exists in the repo** — this scope
 comes from the SoW timeline and
 [`../week3/README.md`](../week3/README.md) *Not in Week 3 scope*.
+
+---
+
+## Sequence — a recommendation reaching a licensed adjuster
+
+Week 3's pipeline is collapsed to one step here; everything below it is new.
+**RBAC is Week 4's**, and it is the first thing that happens, not the last.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Seat as Caller (a real seat)
+    participant IdP as OAuth2 / IdP
+    participant B as Integration boundary (RBAC)
+    participant MCP as MCP (governed door)
+    participant P as Pipeline (Weeks 3 flows 1-11)
+    participant CMS as CMS
+    participant CD as Claims Desk
+    actor Adj as Licensed adjuster
+    participant Aud as Audit log
+
+    Seat->>IdP: authenticate
+    IdP-->>Seat: token
+    Seat->>B: work claim 4414, with token
+    B->>IdP: validate, on-behalf-of exchange
+    IdP-->>B: seat identity, scope
+    Note over B: RBAC decided HERE, never in the model.<br/>Week 3 only had rules against an ASSERTED seat.
+
+    B->>MCP: tool access for this seat
+    MCP->>P: run the pipeline, scoped
+    Note over MCP: the governed door. Tool access becomes<br/>auditable and policeable, not a function call.
+    P-->>MCP: verdict, citations, source, desk
+    MCP-->>B: verdict
+
+    B->>CMS: POST /claims/4414/decisions, Idempotency-Key
+    Note over B,CMS: the row lands with confirmed_by = NULL.<br/>It is NOT a decision until a human says so.
+    CMS->>Aud: recommendation written, by whom, when
+
+    alt same key, same body replayed
+        CMS-->>B: the original record, Idempotent-Replay true
+    else same key, DIFFERENT body
+        CMS-->>B: 409
+        Note over CMS,B: returning the first response would discard<br/>the second intent. A duplicated decision is a duplicated payment.
+    end
+
+    CMS->>CD: recommendation, cited clauses in full, retrieved vs cited
+    CD->>Adj: review
+    Note over CD,Adj: model verdict and deterministic_fallback<br/>wear different badges
+
+    Adj->>CMS: confirm, or override with a reason
+    CMS->>CMS: licence check
+
+    alt license_number present
+        CMS-->>Adj: confirmed, confirmed_by set
+        CMS->>Aud: who owned this outcome
+    else license_number IS NULL
+        CMS-->>Adj: REFUSED
+        Note over CMS,Adj: the agent's own seat has no licence.<br/>Provable, not asserted.
+    end
+
+    alt already confirmed
+        CMS-->>Adj: 409, never a silent overwrite of who owned it
+    end
+```
+
+**M4's gate reads off this diagram.** The two-adjuster confirmation test is
+steps 20–26 run twice with two different licensed seats, plus the refusal path
+proving the unlicensed agent seat cannot confirm, plus the audit log
+attributing both outcomes.

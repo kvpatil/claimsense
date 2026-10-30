@@ -121,3 +121,66 @@ retains the perpetual licence in §6 to everything delivered and accepted.
 Not started. Latency is measurable today, confirmation rate becomes measurable
 when M4 lands, decision accuracy needs 128 more reviewed claims, and fraud
 routing needs a schema change before it is measurable at all.
+
+---
+
+## Sequence — proving it, then handing it over
+
+No new runtime interactions. This is the measurement and sign-off sequence, and
+two of its steps are **blocked today** (marked below).
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Us as Engagement team
+    participant Sys as The Week 4 system
+    participant AR as platform.agent_runs
+    participant Dec as cms.decisions
+    participant GS as Golden set
+    actor LA as Lead Adjuster
+    participant SIU as SIU
+    participant Pack as Evidence pack
+    actor VP as VP Claims
+    actor CISO as CISO
+
+    Us->>GS: build the 150-claim set (22 exist today)
+    Note over Us,GS: SoW section 3 asks for 150 blind-reviewed.<br/>128 short. Start this FIRST, it needs someone else's diary.
+    Us->>Sys: run the golden set
+    Sys->>AR: per run - duration_ms, outcome, source, guardrails
+    Sys->>Dec: recommendations, then confirmations
+
+    Us->>LA: blind review, independent decisions
+    LA-->>Us: her outcome per claim
+
+    par the four acceptance criteria
+        AR-->>Us: latency p50 and p95 from duration_ms
+    and
+        Dec-->>Us: confirmation rate, overrides carrying a reason
+    and
+        GS-->>Us: decision accuracy vs the Lead Adjuster
+    and
+        SIU-->>Us: did SIU open an investigation?
+    end
+
+    Note over SIU,Us: BLOCKED. No field records an SIU outcome<br/>anywhere in cms, pas, dms or platform.<br/>Needs a schema change before this is a number.
+
+    Us->>Sys: make golden, threshold 0.95
+    Sys-->>Us: GATE PASSED, zero adversarial failures
+
+    Us->>Pack: assemble
+    Note over Pack: evidence/01-06 exist as the pattern.<br/>Adds - runbook, DECISIONS.md, two-adjuster evidence,<br/>the four criteria with populations stated.
+
+    Us->>VP: the four criteria, measured
+    Us->>CISO: trust boundaries, synthetic-data invariant
+    VP-->>Us: sign-off
+    CISO-->>Us: sign-off
+
+    Us->>Sys: handover - runbook, credentials revoked by client
+    Us->>Us: delete client data within 30 days, certify in writing
+    Note over Us: SoW section 11. Northwind keeps the perpetual<br/>licence to everything delivered and accepted.
+```
+
+**Read the `par` block as the milestone.** Three of those four branches resolve
+against data the system already emits. The fourth cannot resolve at all today,
+and no amount of running the pipeline will change that — it is a missing field,
+not a missing measurement.
