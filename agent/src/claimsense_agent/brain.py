@@ -80,6 +80,39 @@ class BrainConfig:
                 f"smart={self.smart.split('/')[-1]}")
 
 
+def _aws_credentials_available() -> bool:
+    """Whether anything can sign a Bedrock call — not just env vars.
+
+    This used to test AWS_ACCESS_KEY_ID / AWS_PROFILE only, which is the one
+    place credentials are NOT found in a real deployment. On an EC2 instance
+    role, an ECS task role or IRSA, boto3 resolves credentials from the
+    instance metadata service and no env var is ever set — so a correctly
+    deployed ClaimSense silently ran the mock reasoners and reported itself as
+    `brain=mock`. Found by deploying to EC2 with an instance role and watching
+    it fall back.
+
+    Env vars first, because that path needs no import and is the common local
+    case. Then boto3's own resolution chain, which is the authority on whether
+    a call can be signed. boto3 lives in the `llm` extra, so a stdlib-only
+    install just answers no, which is the correct answer there anyway.
+    """
+    if os.environ.get("AWS_ACCESS_KEY_ID") or os.environ.get("AWS_PROFILE"):
+        return True
+    try:
+        import boto3
+    except ImportError:
+        return False
+    try:
+        # get_credentials() walks env -> shared config -> container -> IMDS and
+        # returns None when nothing can sign. It does not make a Bedrock call.
+        return boto3.Session().get_credentials() is not None
+    except Exception:
+        # A broken or unreachable credential source is a "no", not a crash:
+        # falling back to mock keeps the demo runnable, and the scorecard says
+        # which brain actually answered.
+        return False
+
+
 def detect(force_mock: bool) -> BrainConfig:
     """Decide which brain runs. --mock always wins.
 
@@ -90,7 +123,7 @@ def detect(force_mock: bool) -> BrainConfig:
     if force_mock:
         return BrainConfig(mode="mock", provider="none")
 
-    if os.environ.get("AWS_ACCESS_KEY_ID") or os.environ.get("AWS_PROFILE"):
+    if _aws_credentials_available():
         return BrainConfig(mode="llm", provider="bedrock",
                            fast=model_fast(), smart=model_smart())
     if os.environ.get("OPENAI_API_KEY"):
