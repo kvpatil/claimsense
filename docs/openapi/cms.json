@@ -62,9 +62,13 @@
           "role": {
             "type": "string",
             "enum": [
+              "intake",
               "adjuster",
+              "senior_adjuster",
+              "supervisor",
+              "appraiser",
               "siu",
-              "supervisor"
+              "subrogation"
             ]
           },
           "scope": {
@@ -74,6 +78,21 @@
               "siu",
               "all"
             ]
+          },
+          "active": {
+            "type": "boolean"
+          },
+          "authority_limit_cents": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "description": "amount in integer cents"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "amount in integer cents"
           }
         },
         "required": [
@@ -82,7 +101,9 @@
           "email",
           "license_number",
           "role",
-          "scope"
+          "scope",
+          "active",
+          "authority_limit_cents"
         ],
         "additionalProperties": false
       },
@@ -210,7 +231,8 @@
             "type": "string",
             "enum": [
               "model",
-              "deterministic_fallback"
+              "deterministic_fallback",
+              "manual_adjuster"
             ]
           },
           "rationale": {
@@ -275,7 +297,8 @@
             "type": "string",
             "enum": [
               "model",
-              "deterministic_fallback"
+              "deterministic_fallback",
+              "manual_adjuster"
             ]
           },
           "rationale": {
@@ -396,7 +419,8 @@
                 "type": "string",
                 "enum": [
                   "model",
-                  "deterministic_fallback"
+                  "deterministic_fallback",
+                  "manual_adjuster"
                 ]
               },
               "rationale": {

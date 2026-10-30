@@ -49,8 +49,19 @@ export const Adjuster = z.object({
   // Null for seats that investigate but do not adjudicate. The confirm
   // endpoint refuses a null licence, so this is a control rather than a label.
   license_number: z.string().nullable(),
-  role: z.enum(["adjuster", "siu", "supervisor"]),
+  // All seven desks, not the three this enum used to name. The schema is not
+  // enforced on the response, so the drift cost nothing at runtime and
+  // everything in the published contract: senior_adjuster is the desk the
+  // authority ladder escalates TO, and the spec did not admit it existed.
+  role: z.enum(["intake", "adjuster", "senior_adjuster", "supervisor",
+                "appraiser", "siu", "subrogation"]),
   scope: z.enum(["standard", "siu", "all"]),
+  active: z.boolean(),
+  // The settlement ceiling for this seat, null where the seat holds none.
+  // determinism/authority.py routes on this, so a response that omits it
+  // silently escalates every claim — which is exactly what happened while
+  // this field was absent from both the contract and the SELECT.
+  authority_limit_cents: Cents.nullable(),
 });
 
 export const Decision = z.object({

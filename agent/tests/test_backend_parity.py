@@ -71,6 +71,34 @@ def test_verdict_source_matches_across_backends(mock_data, live_data, claim_id):
     assert a.verdict.source == b.verdict.source
 
 
+@pytest.mark.parametrize("claim_id", PLANTED)
+def test_routing_matches_across_backends(mock_data, live_data, claim_id):
+    """The desk, and the settlement that has to fit inside its authority.
+
+    This file checked the outcome, the citations and the source, and passed
+    while the desk differed on EVERY claim. The live /adjusters/{id} response
+    omitted authority_limit_cents, determinism/authority.py read it with
+    .get(), and an absent ceiling escalated the lot to a senior adjuster —
+    with the fixture path routing correctly the whole time.
+
+    Routing is deterministic code. Two backends holding the same rows must
+    reach the same desk, or the identical-on-both-paths claim is not true.
+    """
+    a, b = _run(mock_data, claim_id), _run(live_data, claim_id)
+    ar, br = a.verdict.routing, b.verdict.routing
+    assert (ar is None) == (br is None), (
+        f"claim {claim_id}: one backend routed and the other did not")
+    if ar is None:
+        return
+    assert ar.desk == br.desk, (
+        f"claim {claim_id}: fixture routes to {ar.desk}, live routes to "
+        f"{br.desk} — the two backends have drifted")
+    assert ar.chain == br.chain, (
+        f"claim {claim_id}: fixture chain {ar.chain}, live chain {br.chain}")
+    assert ar.escalated == br.escalated
+    assert a.verdict.settlement_cents == b.verdict.settlement_cents
+
+
 def test_clause_corpus_is_identical(mock_data, live_data):
     """Field-for-field, not just count.
 
